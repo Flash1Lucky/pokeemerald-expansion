@@ -1773,14 +1773,12 @@ static void MoveSelectionDisplayMoveDescription(u32 battler)
     u32 atkAbility = GetBattlerAbility(battlerAtk);
     u32 holdEffectAtk = GetBattlerHoldEffect(battlerAtk, TRUE);
     u8 cat = gMovesInfo[move].category;
+    u32 moveEffect = gMovesInfo[move].effect;
 
-    if (B_DYNAMIC_MOVE_DESCRIPTIONS)
+    if (B_DYNAMIC_MOVE_DESCRIPTIONS 
+        && move != MOVE_NONE && move != 0xFFFF && moveEffect != EFFECT_KNOCK_OFF 
+        && moveEffect != EFFECT_BRINE && moveEffect != EFFECT_LOW_KICK)
     {
-        u32 moveEffect = gMovesInfo[move].effect;
-
-        if (move == MOVE_NONE || move == 0xFFFF || moveEffect == EFFECT_KNOCK_OFF || moveEffect == EFFECT_BRINE)
-            return;
-
         pwr = CalcMoveBasePowerAfterModifiers(move, battlerAtk, battlerDef, moveType, FALSE, atkAbility, 0, holdEffectAtk, gBattleWeather);
         acc = GetTotalAccuracy(battlerAtk, battlerDef, move, atkAbility, 0, holdEffectAtk, HOLD_EFFECT_NONE);
 
@@ -1794,7 +1792,7 @@ static void MoveSelectionDisplayMoveDescription(u32 battler)
     {
         pwr = gMovesInfo[move].power;
         acc = gMovesInfo[move].accuracy;
-    }    
+    }
 
     u8 pwr_num[3], acc_num[3];
     u8 cat_desc[7] = _("CAT: ");
