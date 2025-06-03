@@ -41,6 +41,7 @@
 #include "trainer_hill.h"
 #include "fldeff.h"
 #include "battle.h"
+#include "craft_menu.h"
 
 static void Task_ExitNonAnimDoor(u8);
 static void Task_ExitNonDoor(u8);
@@ -1695,4 +1696,18 @@ bool32 IsDirectionalStairWarpMetatileBehavior(u16 metatileBehavior, u8 playerDir
             return TRUE;
     }
     return FALSE;
+}
+
+static void Task_WaitForFade_ShowCraftMenu(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        SetMainCallback2(CB2_OpenCraftMenu);
+        DestroyTask(taskId);
+    }
+}
+
+void ReturnToField_OpenCraftMenu(void)
+{
+    SetMainCallback2(CB2_ReturnToField_OpenCraftMenu);
 }
