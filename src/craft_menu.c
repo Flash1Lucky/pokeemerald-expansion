@@ -7,9 +7,11 @@
 #include "gpu_regs.h"
 #include "main.h"
 #include "palette.h"
+#include "graphics.h"
 #include "window.h"
 #include "text_window.h"
 #include "text.h"
+#include "sprite.h"
 #include "field_screen_effect.h"
 #include "constants/songs.h"
 #include "field_player_avatar.h"
@@ -24,15 +26,14 @@ static void InitCraftMenu(void);
 static bool8 HandleCraftMenuInput(void);
 static void CloseCraftMenu(void);
 static void LoadCraftWindows(void);
-static void ShowCraftTableAndInfoWindows(void);
-static void PrintCraftTableItems(void);
+static void ShowInfoWindow(void);
 static void UpdateCraftInfoWindow(void);
+static void CreateWorkbenchSprite(void);
+static void DestroyWorkbenchSprite(void);
 
 // === Window IDs ===
-EWRAM_DATA static u8 sCraftTableWindowId = 0;
 EWRAM_DATA static u8 sCraftInfoWindowId = 0;
-EWRAM_DATA static u8 sCraftOptionsWindowId = 0;
-EWRAM_DATA static u8 sCraftQuantityWindowId = 0;
+EWRAM_DATA static u8 sWorkbenchSpriteId = SPRITE_NONE;
 
 // === Window Layout Enum ===
 enum
@@ -116,43 +117,85 @@ static void Task_RunCraftMenu(u8 taskId)
 static void InitCraftMenu(void)
 {
     LoadCraftWindows();
-    ShowCraftTableAndInfoWindows();
-    PrintCraftTableItems();
+    ShowInfoWindow();
+    CreateWorkbenchSprite();
     UpdateCraftInfoWindow();
 }
 
 // === Window Setup ===
 static void LoadCraftWindows(void)
 {
-    // Craft Table Window
-    sCraftTableWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_TABLE]);
-
-    // Info Window
+    // Only the info window is used for now
     sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
 }
-
-static void ShowCraftTableAndInfoWindows(void)
+static void ShowInfoWindow(void)
 {
-    // Table Window (give this a green fill)
-    DrawStdFrameWithCustomTileAndPalette(sCraftTableWindowId, TRUE, 0x214, 14);
-    FillWindowPixelBuffer(sCraftTableWindowId, PIXEL_FILL(3));  // ← Use a distinct color
-    CopyWindowToVram(sCraftTableWindowId, COPYWIN_FULL);
-
-    // Info Window (use a different fill color)
     DrawStdFrameWithCustomTileAndPalette(sCraftInfoWindowId, TRUE, 0x214, 14);
-    FillWindowPixelBuffer(sCraftInfoWindowId, PIXEL_FILL(1));  // ← Try black or gray
+    FillWindowPixelBuffer(sCraftInfoWindowId, PIXEL_FILL(1));
     CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
-}
-
-static void PrintCraftTableItems(void)
-{
-    AddTextPrinterParameterized(sCraftTableWindowId, FONT_NORMAL, (const u8*)"[WIP] Craft Grid", 2, 2, 0, NULL);
 }
 
 static void UpdateCraftInfoWindow(void)
 {
     AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NORMAL, (const u8*)"[B] Cancel\n[A] Add Item", 1, 1, 0, NULL);
 }
+
+// === Workbench Sprite ===
+enum { TAG_WORKBENCH = 0x4000 };
+
+static const struct CompressedSpriteSheet sWorkbenchSheet = { gCraftMenuWorkbench_Gfx, 0x800, TAG_WORKBENCH };
+static const struct SpritePalette sWorkbenchPalette = { gCraftMenuWorkbench_Pal, TAG_WORKBENCH };
+
+static const struct OamData sOam_Workbench =
+{
+    .shape = SPRITE_SHAPE(64x64),
+    .size = SPRITE_SIZE(64x64),
+    .priority = 0,
+};
+
+static const union AnimCmd sAnim_Workbench[] =
+{
+    ANIMCMD_FRAME(0, 1),
+    ANIMCMD_END,
+};
+
+static const union AnimCmd *const sAnims_Workbench[] =
+{
+    sAnim_Workbench,
+};
+
+static const struct SpriteTemplate sWorkbenchTemplate =
+{
+    .tileTag = TAG_WORKBENCH,
+    .paletteTag = TAG_WORKBENCH,
+    .oam = &sOam_Workbench,
+    .anims = sAnims_Workbench,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static void CreateWorkbenchSprite(void)
+{
+    if (sWorkbenchSpriteId == SPRITE_NONE)
+    {
+        LoadCompressedSpriteSheet(&sWorkbenchSheet);
+        LoadSpritePalette(&sWorkbenchPalette);
+        sWorkbenchSpriteId = CreateSprite(&sWorkbenchTemplate, 72, 56, 0);
+    }
+}
+
+static void DestroyWorkbenchSprite(void)
+{
+    if (sWorkbenchSpriteId != SPRITE_NONE)
+    {
+        FreeSpriteTilesByTag(TAG_WORKBENCH);
+        FreeSpritePaletteByTag(TAG_WORKBENCH);
+        DestroySprite(&gSprites[sWorkbenchSpriteId]);
+        sWorkbenchSpriteId = SPRITE_NONE;
+    }
+}
+
 
 // === Input Handler ===
 static bool8 HandleCraftMenuInput(void)
@@ -172,19 +215,14 @@ static bool8 HandleCraftMenuInput(void)
 // === Cleanup Function ===
 static void CloseCraftMenu(void)
 {
-    ClearStdWindowAndFrame(sCraftTableWindowId, TRUE);
-    if (sCraftTableWindowId != WINDOW_NONE)
-    {
-        RemoveWindow(sCraftTableWindowId);
-        sCraftTableWindowId = WINDOW_NONE;
-    }
-
     ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
     if (sCraftInfoWindowId != WINDOW_NONE)
     {
         RemoveWindow(sCraftInfoWindowId);
         sCraftInfoWindowId = WINDOW_NONE;
     }
+
+    DestroyWorkbenchSprite();
 
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
