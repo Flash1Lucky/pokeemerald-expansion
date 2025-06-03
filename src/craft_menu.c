@@ -7,6 +7,7 @@
 #include "gpu_regs.h"
 #include "main.h"
 #include "palette.h"
+#include "graphics.h"
 #include "window.h"
 #include "text_window.h"
 #include "text.h"
@@ -27,12 +28,14 @@ static void LoadCraftWindows(void);
 static void ShowCraftTableAndInfoWindows(void);
 static void PrintCraftTableItems(void);
 static void UpdateCraftInfoWindow(void);
+static void DrawWorkbenchPic(void);
 
 // === Window IDs ===
 EWRAM_DATA static u8 sCraftTableWindowId = 0;
 EWRAM_DATA static u8 sCraftInfoWindowId = 0;
 EWRAM_DATA static u8 sCraftOptionsWindowId = 0;
 EWRAM_DATA static u8 sCraftQuantityWindowId = 0;
+EWRAM_DATA static u8 *sWorkbenchBuffer = NULL;
 
 // === Window Layout Enum ===
 enum
@@ -117,6 +120,7 @@ static void InitCraftMenu(void)
 {
     LoadCraftWindows();
     ShowCraftTableAndInfoWindows();
+    DrawWorkbenchPic();
     PrintCraftTableItems();
     UpdateCraftInfoWindow();
 }
@@ -154,6 +158,21 @@ static void UpdateCraftInfoWindow(void)
     AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NORMAL, (const u8*)"[B] Cancel\n[A] Add Item", 1, 1, 0, NULL);
 }
 
+static void DrawWorkbenchPic(void)
+{
+    u32 size;
+
+    if (sWorkbenchBuffer == NULL)
+        sWorkbenchBuffer = malloc_and_decompress(gCraftMenuWorkbench_Gfx, &size);
+
+    if (sWorkbenchBuffer != NULL)
+    {
+        LoadPalette(gCraftMenuWorkbench_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        BlitBitmapRectToWindow(sCraftTableWindowId, sWorkbenchBuffer, 0, 0, 96, 96, 8, 8, 96, 96);
+        CopyWindowToVram(sCraftTableWindowId, COPYWIN_GFX);
+    }
+}
+
 // === Input Handler ===
 static bool8 HandleCraftMenuInput(void)
 {
@@ -184,6 +203,12 @@ static void CloseCraftMenu(void)
     {
         RemoveWindow(sCraftInfoWindowId);
         sCraftInfoWindowId = WINDOW_NONE;
+    }
+
+    if (sWorkbenchBuffer != NULL)
+    {
+        Free(sWorkbenchBuffer);
+        sWorkbenchBuffer = NULL;
     }
 
     ScriptUnfreezeObjectEvents();

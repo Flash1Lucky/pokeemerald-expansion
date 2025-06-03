@@ -1724,6 +1724,9 @@ const u16 gShopMenu_Pal[] = INCBIN_U16("graphics/shop/menu.gbapal");
 const u32 gShopMenu_Tilemap[] = INCBIN_U32("graphics/shop/menu.bin.lz");
 const u32 gShopMenuMoney_Gfx[] = INCBIN_U32("graphics/shop/money.4bpp.lz");
 
+const u32 gCraftMenuWorkbench_Gfx[] = INCBIN_U32("graphics/interface/workbench.4bpp.lz");
+const u16 gCraftMenuWorkbench_Pal[] = INCBIN_U16("graphics/interface/workbench.gbapal");
+
 // Pokeblock
 
 const u32 gMenuPokeblock_Gfx[] = INCBIN_U32("graphics/pokeblock/menu.4bpp.lz");
