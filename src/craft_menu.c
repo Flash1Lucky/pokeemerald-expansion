@@ -1,3 +1,4 @@
+// === craft_menu.c ===
 #include "global.h"
 #include "task.h"
 #include "script.h"
@@ -34,11 +35,24 @@ static void UpdateCraftInfoWindow(void);
 static void CreateWorkbenchSprite(void);
 static void DestroyWorkbenchSprite(void);
 
+#define TAG_WB_TOPLEFT     0x4001
+#define TAG_WB_TOPMID      0x4002
+#define TAG_WB_TOPRIGHT    0x4003
+#define TAG_WB_MIDLEFT     0x4004
+#define TAG_WB_MIDMID      0x4005
+#define TAG_WB_MIDRIGHT    0x4006
+#define TAG_WB_BOTLEFT     0x4007
+#define TAG_WB_BOTMID      0x4008
+#define TAG_WB_BOTRIGHT    0x4009
+#define TAG_WB_PALETTE     0x4010
+
+#define WB_CENTER_X 120
+#define WB_CENTER_Y 60
+#define WB_OFFSET   32
+
 // === Window IDs ===
 EWRAM_DATA static u8 sCraftInfoWindowId = 0;
-//EWRAM_DATA static u8 sCraftOptionsWindowId = 0;
-//EWRAM_DATA static u8 sCraftQuantityWindowId = 0;
-EWRAM_DATA static u8 sWorkbenchSpriteId;
+EWRAM_DATA static u8 sWorkbenchSpriteIds[9];
 
 // === Window Layout Enum ===
 enum
@@ -81,7 +95,6 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
     }*/
 };
 
-// === Entry Point from Script ===
 void StartCraftMenu(void)
 {
     PlayerFreeze();
@@ -91,7 +104,6 @@ void StartCraftMenu(void)
     CreateTask(Task_EnterCraftMenu, 0);
 }
 
-// === Initial Task: Setup Craft Menu ===
 static void Task_EnterCraftMenu(u8 taskId)
 {
     InitCraftMenu();
@@ -99,30 +111,25 @@ static void Task_EnterCraftMenu(u8 taskId)
     gTasks[taskId].func = Task_RunCraftMenu;
 }
 
-// === Main Menu Task: Handles Input ===
 static void Task_RunCraftMenu(u8 taskId)
 {
     if (gMenuCallback && gMenuCallback() == TRUE)
-    {
         DestroyTask(taskId);
-    }
 }
 
-// === Setup Crafting Menu Internals ===
 static void InitCraftMenu(void)
 {
-    sWorkbenchSpriteId = SPRITE_NONE;
-    
+    for (int i = 0; i < 9; i++)
+        sWorkbenchSpriteIds[i] = SPRITE_NONE;
+
     LoadCraftWindows();
     ShowInfoWindow();
     CreateWorkbenchSprite();
     UpdateCraftInfoWindow();
 }
 
-// === Window Setup ===
 static void LoadCraftWindows(void)
 {
-    // Info Window
     sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
 }
 
@@ -138,63 +145,91 @@ static void UpdateCraftInfoWindow(void)
     AddTextPrinterParameterized(sCraftInfoWindowId, FONT_NORMAL, gText_Blank, 1, 1, 0, NULL);
 }
 
-// === Workbench Sprite ===
-enum { TAG_WORKBENCH = 0x4000 };
-
-static const struct CompressedSpriteSheet sWorkbenchSheet = { gCraftMenuWorkbench_Gfx, 0x800, TAG_WORKBENCH };
-static const struct SpritePalette sWorkbenchPalette = { gCraftMenuWorkbench_Pal, TAG_WORKBENCH };
-
-static const struct OamData sOam_Workbench =
+static const struct CompressedSpriteSheet sWorkbenchSheets[] =
 {
-    .shape = SPRITE_SHAPE(64x64),
-    .size = SPRITE_SIZE(64x64),
+    { gCraftWorkbench_TopLeft_Gfx,    0x400, TAG_WB_TOPLEFT },
+    { gCraftWorkbench_TopMid_Gfx,     0x400, TAG_WB_TOPMID },
+    { gCraftWorkbench_TopRight_Gfx,   0x400, TAG_WB_TOPRIGHT },
+    { gCraftWorkbench_MidLeft_Gfx,    0x400, TAG_WB_MIDLEFT },
+    { gCraftWorkbench_MidMid_Gfx,     0x400, TAG_WB_MIDMID },
+    { gCraftWorkbench_MidRight_Gfx,   0x400, TAG_WB_MIDRIGHT },
+    { gCraftWorkbench_BotLeft_Gfx,    0x400, TAG_WB_BOTLEFT },
+    { gCraftWorkbench_BotMid_Gfx,     0x400, TAG_WB_BOTMID },
+    { gCraftWorkbench_BotRight_Gfx,   0x400, TAG_WB_BOTRIGHT },
+};
+
+static const struct SpritePalette sWorkbenchPalette = { gCraftWorkbench_Pal, TAG_WB_PALETTE };
+
+static const struct OamData sOam_Workbench32 =
+{
+    .shape = SPRITE_SHAPE(32x32),
+    .size = SPRITE_SIZE(32x32),
     .priority = 0,
 };
 
-static const union AnimCmd sAnim_Workbench[] =
-{
-    ANIMCMD_FRAME(0, 1),
-    ANIMCMD_END,
-};
+#define WB_TEMPLATE(tag) {            \
+    .tileTag = tag,                   \
+    .paletteTag = TAG_WB_PALETTE,     \
+    .oam = &sOam_Workbench32,         \
+    .anims = gDummySpriteAnimTable,   \
+    .images = NULL,                   \
+    .affineAnims = gDummySpriteAffineAnimTable, \
+    .callback = SpriteCallbackDummy   \
+}
 
-static const union AnimCmd *const sAnims_Workbench[] =
+static const struct SpriteTemplate sWorkbenchTemplates[9] =
 {
-    sAnim_Workbench,
-};
-
-static const struct SpriteTemplate sWorkbenchTemplate =
-{
-    .tileTag = TAG_WORKBENCH,
-    .paletteTag = TAG_WORKBENCH,
-    .oam = &sOam_Workbench,
-    .anims = sAnims_Workbench,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
+    WB_TEMPLATE(TAG_WB_TOPLEFT),   // 0
+    WB_TEMPLATE(TAG_WB_TOPMID),    // 1
+    WB_TEMPLATE(TAG_WB_TOPRIGHT),  // 2
+    WB_TEMPLATE(TAG_WB_MIDLEFT),   // 3
+    WB_TEMPLATE(TAG_WB_MIDMID),    // 4
+    WB_TEMPLATE(TAG_WB_MIDRIGHT),  // 5
+    WB_TEMPLATE(TAG_WB_BOTLEFT),   // 6
+    WB_TEMPLATE(TAG_WB_BOTMID),    // 7
+    WB_TEMPLATE(TAG_WB_BOTRIGHT),  // 8
 };
 
 static void CreateWorkbenchSprite(void)
 {
-    if (sWorkbenchSpriteId == SPRITE_NONE)
+    for (int i = 0; i < 9; i++)
+        LoadCompressedSpriteSheet(&sWorkbenchSheets[i]);
+    LoadSpritePalette(&sWorkbenchPalette);
+
+    const s16 xBase = WB_CENTER_X - 32;
+    const s16 yBase = WB_CENTER_Y - 32;
+    for (int row = 0; row < 3; row++)
     {
-        LoadCompressedSpriteSheet(&sWorkbenchSheet);
-        LoadSpritePalette(&sWorkbenchPalette);
-        sWorkbenchSpriteId = CreateSprite(&sWorkbenchTemplate, 120, 60, 0);
+        for (int col = 0; col < 3; col++)
+        {
+            int i = row * 3 + col;
+            sWorkbenchSpriteIds[i] = CreateSprite(&sWorkbenchTemplates[i], xBase + 32 * col, yBase + 32 * row, 0);
+        }
     }
 }
 
 static void DestroyWorkbenchSprite(void)
 {
-    if (sWorkbenchSpriteId != SPRITE_NONE)
+    for (int i = 0; i < 9; i++)
     {
-        FreeSpriteTilesByTag(TAG_WORKBENCH);
-        FreeSpritePaletteByTag(TAG_WORKBENCH);
-        DestroySprite(&gSprites[sWorkbenchSpriteId]);
-        sWorkbenchSpriteId = SPRITE_NONE;
+        if (sWorkbenchSpriteIds[i] != SPRITE_NONE)
+        {
+            DestroySprite(&gSprites[sWorkbenchSpriteIds[i]]);
+            sWorkbenchSpriteIds[i] = SPRITE_NONE;
+        }
     }
+    FreeSpriteTilesByTag(TAG_WB_TOPLEFT);
+    FreeSpriteTilesByTag(TAG_WB_TOPMID);
+    FreeSpriteTilesByTag(TAG_WB_TOPRIGHT);
+    FreeSpriteTilesByTag(TAG_WB_MIDLEFT);
+    FreeSpriteTilesByTag(TAG_WB_MIDMID);
+    FreeSpriteTilesByTag(TAG_WB_MIDRIGHT);
+    FreeSpriteTilesByTag(TAG_WB_BOTLEFT);
+    FreeSpriteTilesByTag(TAG_WB_BOTMID);
+    FreeSpriteTilesByTag(TAG_WB_BOTRIGHT);
+    FreeSpritePaletteByTag(TAG_WB_PALETTE);
 }
 
-// === Input Handler ===
 static bool8 HandleCraftMenuInput(void)
 {
     if (JOY_NEW(B_BUTTON))
@@ -203,13 +238,9 @@ static bool8 HandleCraftMenuInput(void)
         CloseCraftMenu();
         return TRUE;
     }
-
-    // Placeholder: add other input logic here
-
     return FALSE;
 }
 
-// === Cleanup Function ===
 static void CloseCraftMenu(void)
 {
     ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
@@ -218,9 +249,7 @@ static void CloseCraftMenu(void)
         RemoveWindow(sCraftInfoWindowId);
         sCraftInfoWindowId = WINDOW_NONE;
     }
-
     DestroyWorkbenchSprite();
-
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
     ScriptContext_Enable();

@@ -1724,8 +1724,17 @@ const u16 gShopMenu_Pal[] = INCBIN_U16("graphics/shop/menu.gbapal");
 const u32 gShopMenu_Tilemap[] = INCBIN_U32("graphics/shop/menu.bin.lz");
 const u32 gShopMenuMoney_Gfx[] = INCBIN_U32("graphics/shop/money.4bpp.lz");
 
-const u32 gCraftMenuWorkbench_Gfx[] = INCBIN_U32("graphics/interface/workbench.4bpp.lz");
-const u16 gCraftMenuWorkbench_Pal[] = INCBIN_U16("graphics/interface/workbench.gbapal");
+const u32 gCraftWorkbench_TopLeft_Gfx[]    = INCBIN_U32("graphics/interface/workbench_top_left.4bpp.lz");
+const u32 gCraftWorkbench_TopMid_Gfx[]     = INCBIN_U32("graphics/interface/workbench_top_mid.4bpp.lz");
+const u32 gCraftWorkbench_TopRight_Gfx[]   = INCBIN_U32("graphics/interface/workbench_top_right.4bpp.lz");
+const u32 gCraftWorkbench_MidLeft_Gfx[]    = INCBIN_U32("graphics/interface/workbench_mid_left.4bpp.lz");
+const u32 gCraftWorkbench_MidMid_Gfx[]     = INCBIN_U32("graphics/interface/workbench_mid_mid.4bpp.lz");
+const u32 gCraftWorkbench_MidRight_Gfx[]   = INCBIN_U32("graphics/interface/workbench_mid_right.4bpp.lz");
+const u32 gCraftWorkbench_BotLeft_Gfx[]    = INCBIN_U32("graphics/interface/workbench_bot_left.4bpp.lz");
+const u32 gCraftWorkbench_BotMid_Gfx[]     = INCBIN_U32("graphics/interface/workbench_bot_mid.4bpp.lz");
+const u32 gCraftWorkbench_BotRight_Gfx[]   = INCBIN_U32("graphics/interface/workbench_bot_right.4bpp.lz");
+
+const u16 gCraftWorkbench_Pal[] = INCBIN_U16("graphics/interface/workbench.gbapal");
 
 // Pokeblock
 
