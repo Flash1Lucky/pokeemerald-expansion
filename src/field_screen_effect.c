@@ -1698,15 +1698,6 @@ bool32 IsDirectionalStairWarpMetatileBehavior(u16 metatileBehavior, u8 playerDir
     return FALSE;
 }
 
-static void Task_WaitForFade_ShowCraftMenu(u8 taskId)
-{
-    if (!gPaletteFade.active)
-    {
-        SetMainCallback2(CB2_OpenCraftMenu);
-        DestroyTask(taskId);
-    }
-}
-
 void ReturnToField_OpenCraftMenu(void)
 {
     FadeInFromBlack();
