@@ -18,6 +18,7 @@ enum {
     ITEMMENULOCATION_WALLY,
     ITEMMENULOCATION_PCBOX,
     ITEMMENULOCATION_BERRY_TREE_MULCH,
+    ITEMMENULOCATION_CRAFTING,
     ITEMMENULOCATION_LAST,
 };
 
@@ -97,7 +98,9 @@ void CB2_BagMenuFromStartMenu(void);
 u8 GetItemListPosition(u8 pocketId);
 bool8 UseRegisteredKeyItemOnField(void);
 void CB2_GoToSellMenu(void);
-void GoToBagMenu(u8 location, u8 pocket, void ( *exitCallback)());
+void GoToBagMenu(u8 location, u8 pocket, void (*exitCallback)());
+void SetBagPreOpenCallback(void (*callback)(void));
+void BagPreOpen_SetCursorItem(void);
 void DoWallyTutorialBagMenu(void);
 void ResetBagScrollPositions(void);
 void ChooseBerryForMachine(void (*exitCallback)(void));

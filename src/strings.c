@@ -206,6 +206,8 @@ const u8 *const gPocketNamesStringsTable[] =
     [KEYITEMS_POCKET] = COMPOUND_STRING("KEY ITEMS")
 };
 
+const u8 gText_CraftingMode[] = _("CRAFTING");
+
 const u8 gText_NumberItem_TMBerry[] = _("{NO}{STR_VAR_1}{CLEAR 0x07}{STR_VAR_2}");
 const u8 gText_NumberItem_HM[] = _("{CLEAR_TO 0x11}{STR_VAR_1}{CLEAR 0x05}{STR_VAR_2}");
 

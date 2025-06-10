@@ -320,6 +320,7 @@ extern const u8 gText_ICanPayVar1[];
 extern const u8 gText_TurnedOverVar1ForVar2[];
 extern const u8 gText_ThreeDashes[];
 extern const u8 *const gPocketNamesStringsTable[];
+extern const u8 gText_CraftingMode[];
 
 // party menu text
 extern const u8 gText_PkmnHPRestoredByVar2[];
