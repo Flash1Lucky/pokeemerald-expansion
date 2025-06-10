@@ -312,3 +312,8 @@ void CraftMenuUI_Close(void)
     DestroyWorkbenchSprite();
 }
 
+u8 CraftMenuUI_GetCursorPos(void)
+{
+    return sCraftCursorPos;
+}
+

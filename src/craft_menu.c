@@ -9,6 +9,8 @@
 #include "event_object_lock.h"
 #include "craft_menu_ui.h"
 #include "craft_logic.h"
+#include "item_menu.h"
+#include "craft_menu.h"
 
 static void Task_EnterCraftMenu(u8 taskId);
 static void Task_RunCraftMenu(u8 taskId);
@@ -51,7 +53,7 @@ static void CB2_ReturnToCraftMenu(void)
 
 static void OpenBagFromCraftMenu(void)
 {
-    gCraftActiveSlot = sCraftCursorPos;
+    gCraftActiveSlot = CraftMenuUI_GetCursorPos();
     CraftMenuUI_Close();
     SetBagPreOpenCallback(BagPreOpen_SetCursorItem);
     GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
