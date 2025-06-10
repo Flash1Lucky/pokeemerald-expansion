@@ -59,6 +59,7 @@ static bool8 WaitStairExitMovementFinished(s16*, s16*, s16*, s16*, s16*);
 static void UpdateStairsMovement(s16, s16, s16*, s16*, s16*);
 static void Task_StairWarp(u8);
 static void ForceStairsMovement(u32, s16*, s16*);
+static void Task_WaitForFade_ShowCraftMenu(u8 taskId);
 
 // data[0] is used universally by tasks in this file as a state for switches
 #define tState       data[0]
