@@ -21139,6 +21139,23 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .battleAnimScript = gBattleAnimMove_MalignantChain,
     },
 
+    [MOVE_SHIELD_UP] =
+    {
+        .name = COMPOUND_STRING("Shield Up"),
+        .description = COMPOUND_STRING(
+            "Raises a shield equal to\n"
+            "a quarter of max HP."),
+        .effect = EFFECT_APPLY_SHIELD,
+        .power = 0,
+        .type = TYPE_NORMAL,
+        .accuracy = 0,
+        .pp = 20,
+        .target = MOVE_TARGET_USER,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_STATUS,
+        .snatchAffected = TRUE,
+    },
+
     // Z-Moves
     [MOVE_BREAKNECK_BLITZ] =
     {

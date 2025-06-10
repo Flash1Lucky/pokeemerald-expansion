@@ -576,7 +576,6 @@ static void Cmd_switchoutabilities(void);
 static void Cmd_jumpifhasnohp(void);
 static void Cmd_jumpifnotcurrentmoveargtype(void);
 static void Cmd_pickup(void);
-static void Cmd_unused_0xE6(void);
 static void Cmd_unused_0xE7(void);
 static void Cmd_settypebasedhalvers(void);
 static void Cmd_jumpifsubstituteblocks(void);
@@ -602,6 +601,7 @@ static void Cmd_jumpifcaptivateaffected(void);
 static void Cmd_setnonvolatilestatus(void);
 static void Cmd_tryworryseed(void);
 static void Cmd_callnative(void);
+static void Cmd_addshield(void);
 
 void (*const gBattleScriptingCommandsTable[])(void) =
 {
@@ -835,7 +835,7 @@ void (*const gBattleScriptingCommandsTable[])(void) =
     Cmd_jumpifhasnohp,                           //0xE3
     Cmd_jumpifnotcurrentmoveargtype,             //0xE4
     Cmd_pickup,                                  //0xE5
-    Cmd_unused_0xE6,                             //0xE6
+    Cmd_addshield,                               //0xE6
     Cmd_unused_0xE7,                             //0xE7
     Cmd_settypebasedhalvers,                     //0xE8
     Cmd_jumpifsubstituteblocks,                  //0xE9
@@ -861,7 +861,7 @@ void (*const gBattleScriptingCommandsTable[])(void) =
     Cmd_setnonvolatilestatus,                    //0xFD
     Cmd_tryworryseed,                            //0xFE
     Cmd_callnative,                              //0xFF
-};
+}; 
 
 const struct StatFractions gAccuracyStageRatios[] =
 {
@@ -2698,6 +2698,16 @@ static void Cmd_datahpupdate(void)
                         gBideTarget[battler] = gBattlerAttacker;
                     else
                         gBideTarget[battler] = gBattlerTarget;
+                }
+
+                // Apply damage to shield first if applicable
+                if (!(gHitMarker & HITMARKER_PASSIVE_DAMAGE)
+                    && GetMoveCategory(gCurrentMove) != DAMAGE_CATEGORY_STATUS
+                    && gBattleMons[battler].shield > 0)
+                {
+                    s32 shieldDmg = min(gBattleMons[battler].shield, gBattleStruct->moveDamage[battler]);
+                    gBattleMons[battler].shield -= shieldDmg;
+                    gBattleStruct->moveDamage[battler] -= shieldDmg;
                 }
 
                 // Deal damage to the battler
@@ -15424,10 +15434,6 @@ static void Cmd_pickup(void)
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
-static void Cmd_unused_0xE6(void)
-{
-}
-
 static void Cmd_unused_0xE7(void)
 {
 }
@@ -16529,6 +16535,24 @@ static void Cmd_callnative(void)
     CMD_ARGS(void (*func)(void));
     void (*func)(void) = cmd->func;
     func();
+}
+
+static void Cmd_addshield(void)
+{
+    CMD_ARGS(u8 percentage);
+
+    u8 battler = gBattlerTarget;
+    u16 maxShield = GetNonDynamaxMaxHP(battler);
+    u16 amount = maxShield * cmd->percentage / 100;
+    if (amount == 0)
+        amount = 1;
+
+    if (gBattleMons[battler].shield + amount > maxShield)
+        gBattleMons[battler].shield = maxShield;
+    else
+        gBattleMons[battler].shield += amount;
+
+    gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
 // Callnative Funcs

@@ -3599,6 +3599,19 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
                 gSpecialStatuses[battler].switchInAbilityDone = TRUE;
             }
             break;
+        case ABILITY_LAYERED:
+            if (!gSpecialStatuses[battler].switchInAbilityDone)
+            {
+                gBattlerTarget = battler;
+                gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SWITCHIN_LAYERED;
+                gBattleMons[battler].shield = GetNonDynamaxMaxHP(battler) / 2;
+                if (gBattleMons[battler].shield == 0)
+                    gBattleMons[battler].shield = 1;
+                BattleScriptPushCursorAndCallback(BattleScript_SwitchInAbilityMsg);
+                effect++;
+                gSpecialStatuses[battler].switchInAbilityDone = TRUE;
+            }
+            break;
         case ABILITY_ANTICIPATION:
             if (!gSpecialStatuses[battler].switchInAbilityDone)
             {

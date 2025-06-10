@@ -1236,8 +1236,9 @@
 	.byte 0xe5
 	.endm
 
-	.macro unused_0xE6
+	.macro addshield percentage:req
 	.byte 0xe6
+	.byte \percentage
 	.endm
 
 	.macro unused_0xE7
