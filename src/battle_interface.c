@@ -3022,7 +3022,7 @@ static void TextIntoFalseSwipeWindow(void *dest, u8 *windowTileData)
     }
 }
 
-static void PrintOnFalseSwipeWindow(bool32 active)
+void PrintOnFalseSwipeWindow(bool32 active)
 {
     u32 windowId;
     u8 *windowTileData;
