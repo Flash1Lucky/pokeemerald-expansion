@@ -12,6 +12,8 @@
 #include "decompress.h"
 #include "strings.h"
 #include "item_icon.h"
+#include "item_menu.h"
+#include "craft_menu.h"
 #include "constants/songs.h"
 #include "constants/items.h"
 #include "craft_logic.h"
@@ -218,9 +220,9 @@ static void DrawCraftingIcons(void)
             sCraftSlotSpriteIds[i] = SPRITE_NONE;
         }
 
-        if (gCraftSlots[i] != ITEM_NONE)
+        if (gCraftSlots[i].itemId != ITEM_NONE)
         {
-            u8 spriteId = AddItemIconSprite(gCraftSlots[i], gCraftSlots[i], gCraftSlots[i]);
+            u8 spriteId = AddItemIconSprite(gCraftSlots[i].itemId, gCraftSlots[i].itemId, gCraftSlots[i].itemId);
             if (spriteId != MAX_SPRITES)
             {
                 sCraftSlotSpriteIds[i] = spriteId;
@@ -309,3 +311,9 @@ void CraftMenuUI_Close(void)
 
     DestroyWorkbenchSprite();
 }
+
+u8 CraftMenuUI_GetCursorPos(void)
+{
+    return sCraftCursorPos;
+}
+
