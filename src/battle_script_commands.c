@@ -2223,7 +2223,8 @@ static void Cmd_adjustdamage(void)
 
         gPotentialItemEffectBattler = battlerDef;
 
-        if (moveEffect == EFFECT_FALSE_SWIPE)
+        if (moveEffect == EFFECT_FALSE_SWIPE
+            || (gBattleStruct->falseSwipeActive && GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER && !(gBattleTypeFlags & BATTLE_TYPE_TRAINER)))
         {
             enduredHit = TRUE;
         }

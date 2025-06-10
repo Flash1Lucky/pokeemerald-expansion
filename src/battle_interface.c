@@ -207,6 +207,7 @@ static void Task_FreeAbilityPopUpGfx(u8);
 static void SpriteCB_LastUsedBall(struct Sprite *);
 static void SpriteCB_LastUsedBallWin(struct Sprite *);
 static void SpriteCB_MoveInfoWin(struct Sprite *sprite);
+static void SpriteCB_FalseSwipeWin(struct Sprite *sprite);
 
 static const struct OamData sOamData_64x32 =
 {
@@ -729,6 +730,7 @@ u8 CreateBattlerHealthboxSprites(u8 battler)
     gBattleStruct->ballSpriteIds[0] = MAX_SPRITES;
     gBattleStruct->ballSpriteIds[1] = MAX_SPRITES;
     gBattleStruct->moveInfoSpriteId = MAX_SPRITES;
+    gBattleStruct->falseSwipeSpriteId = MAX_SPRITES;
 
     return healthboxLeftSpriteId;
 }
@@ -2901,6 +2903,7 @@ static const struct SpriteTemplate sSpriteTemplate_LastUsedBallWindow =
 };
 
 #define MOVE_INFO_WINDOW_TAG 0xE722
+#define FALSE_SWIPE_WINDOW_TAG 0xE723
 
 static const struct OamData sOamData_MoveInfoWindow =
 {
@@ -2924,6 +2927,34 @@ static const struct SpriteTemplate sSpriteTemplate_MoveInfoWindow =
     .tileTag = MOVE_INFO_WINDOW_TAG,
     .paletteTag = ABILITY_POP_UP_TAG,
     .oam = &sOamData_MoveInfoWindow,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCB_FalseSwipeWin
+};
+
+static const struct OamData sOamData_FalseSwipeWindow =
+{
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .mosaic = 0,
+    .bpp = 0,
+    .shape = SPRITE_SHAPE(32x32),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(32x32),
+    .tileNum = 0,
+    .priority = 1,
+    .paletteNum = 0,
+    .affineParam = 0,
+};
+
+static const struct SpriteTemplate sSpriteTemplate_FalseSwipeWindow =
+{
+    .tileTag = FALSE_SWIPE_WINDOW_TAG,
+    .paletteTag = ABILITY_POP_UP_TAG,
+    .oam = &sOamData_FalseSwipeWindow,
     .anims = gDummySpriteAnimTable,
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
@@ -2953,6 +2984,13 @@ static const u8 sMoveInfoWindowGfx[] = INCBIN_U8("graphics/battle_interface/move
 static const struct SpriteSheet sSpriteSheet_MoveInfoWindow =
 {
     sMoveInfoWindowGfx, sizeof(sMoveInfoWindowGfx), MOVE_INFO_WINDOW_TAG
+};
+
+static const u8 sFalseSwipeWindowGfx[] = INCBIN_U8("graphics/battle_interface/move_info_window_r.4bpp");
+
+static const struct SpriteSheet sSpriteSheet_FalseSwipeWindow =
+{
+    sFalseSwipeWindowGfx, sizeof(sFalseSwipeWindowGfx), FALSE_SWIPE_WINDOW_TAG
 };
 
 #define LAST_USED_BALL_X_F    14
@@ -3073,6 +3111,36 @@ void TryToHideMoveInfoWindow(void)
     gSprites[gBattleStruct->moveInfoSpriteId].sHide = TRUE;
 }
 
+void TryToAddFalseSwipeWindow(void)
+{
+    if (!B_FALSE_SWIPE_TOGGLE || (gBattleTypeFlags & BATTLE_TYPE_TRAINER))
+        return;
+
+    LoadSpritePalette(&sSpritePalette_AbilityPopUp);
+    if (GetSpriteTileStartByTag(FALSE_SWIPE_WINDOW_TAG) == 0xFFFF)
+        LoadSpriteSheet(&sSpriteSheet_FalseSwipeWindow);
+
+    if (gBattleStruct->falseSwipeSpriteId == MAX_SPRITES)
+    {
+        gBattleStruct->falseSwipeSpriteId = CreateSprite(&sSpriteTemplate_FalseSwipeWindow, LAST_BALL_WIN_X_0, LAST_USED_WIN_Y, 6);
+        gSprites[gBattleStruct->falseSwipeSpriteId].sHide = FALSE;
+    }
+}
+
+void TryToHideFalseSwipeWindow(void)
+{
+    if (gBattleStruct->falseSwipeSpriteId != MAX_SPRITES)
+        gSprites[gBattleStruct->falseSwipeSpriteId].sHide = TRUE;
+}
+
+static void DestroyFalseSwipeWinGfx(struct Sprite *sprite)
+{
+    FreeSpriteTilesByTag(FALSE_SWIPE_WINDOW_TAG);
+    FreeSpritePaletteByTag(ABILITY_POP_UP_TAG);
+    DestroySprite(sprite);
+    gBattleStruct->falseSwipeSpriteId = MAX_SPRITES;
+}
+
 static void DestroyMoveInfoWinGfx(struct Sprite *sprite)
 {
     FreeSpriteTilesByTag(MOVE_INFO_WINDOW_TAG);
@@ -3127,6 +3195,23 @@ static void SpriteCB_MoveInfoWin(struct Sprite *sprite)
 
         if (sprite->x == LAST_BALL_WIN_X_0)
             DestroyMoveInfoWinGfx(sprite);
+    }
+    else
+    {
+        if (sprite->x != LAST_BALL_WIN_X_F)
+            sprite->x++;
+    }
+}
+
+static void SpriteCB_FalseSwipeWin(struct Sprite *sprite)
+{
+    if (sprite->sHide)
+    {
+        if (sprite->x != LAST_BALL_WIN_X_0)
+            sprite->x--;
+
+        if (sprite->x == LAST_BALL_WIN_X_0)
+            DestroyFalseSwipeWinGfx(sprite);
     }
     else
     {
