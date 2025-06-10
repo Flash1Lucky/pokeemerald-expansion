@@ -13,6 +13,8 @@
 #include "craft_menu.h"
 #include "overworld.h"
 #include "field_screen_effect.h"
+#include "palette.h"
+#include "field_weather.h"
 
 static void Task_EnterCraftMenu(u8 taskId);
 static void Task_RunCraftMenu(u8 taskId);
