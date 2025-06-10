@@ -44,6 +44,19 @@ static void InitCraftMenu(void)
     CraftMenuUI_Init();
 }
 
+static void CB2_ReturnToCraftMenu(void)
+{
+    SetMainCallback2(CB2_OpenCraftMenu);
+}
+
+static void OpenBagFromCraftMenu(void)
+{
+    gCraftActiveSlot = sCraftCursorPos;
+    CraftMenuUI_Close();
+    SetBagPreOpenCallback(BagPreOpen_SetCursorItem);
+    GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
+}
+
 static bool8 HandleCraftMenuInput(void)
 {
     if (JOY_NEW(B_BUTTON))
@@ -56,7 +69,7 @@ static bool8 HandleCraftMenuInput(void)
     if (JOY_NEW(A_BUTTON))
     {
         PlaySE(SE_SELECT);
-        CraftMenuUI_OpenBag();
+        OpenBagFromCraftMenu();
         return TRUE;
     }
 

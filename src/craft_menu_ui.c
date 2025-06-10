@@ -312,15 +312,3 @@ void CraftMenuUI_Close(void)
     DestroyWorkbenchSprite();
 }
 
-static void CB2_ReturnToCraftMenu(void)
-{
-    SetMainCallback2(CB2_OpenCraftMenu);
-}
-
-void CraftMenuUI_OpenBag(void)
-{
-    gCraftActiveSlot = sCraftCursorPos;
-    CraftMenuUI_Close();
-    SetBagPreOpenCallback(BagPreOpen_SetCursorItem);
-    GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
-}

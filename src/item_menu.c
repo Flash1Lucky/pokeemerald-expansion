@@ -42,6 +42,7 @@
 #include "sprite.h"
 #include "strings.h"
 #include "string_util.h"
+#include "craft_menu.h"
 #include "craft_logic.h"
 #include "task.h"
 #include "text_window.h"
