@@ -53,6 +53,13 @@ static bool8 HandleCraftMenuInput(void)
         return TRUE;
     }
 
+    if (JOY_NEW(A_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        CraftMenuUI_OpenBag();
+        return TRUE;
+    }
+
     if (CraftMenuUI_HandleDpadInput())
     {
         PlaySE(SE_SELECT);
@@ -68,4 +75,9 @@ static void CloseCraftMenu(void)
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
     ScriptContext_Enable();
+}
+
+void CB2_OpenCraftMenu(void)
+{
+    StartCraftMenu();
 }
