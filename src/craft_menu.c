@@ -9,12 +9,17 @@
 #include "event_object_lock.h"
 #include "craft_menu_ui.h"
 #include "craft_logic.h"
+#include "item_menu.h"
+#include "craft_menu.h"
+#include "overworld.h"
+#include "field_screen_effect.h"
 
 static void Task_EnterCraftMenu(u8 taskId);
 static void Task_RunCraftMenu(u8 taskId);
 static void InitCraftMenu(void);
 static bool8 HandleCraftMenuInput(void);
 static void CloseCraftMenu(void);
+static void CB2_ReturnToCraftMenu(void);
 
 void StartCraftMenu(void)
 {
@@ -44,12 +49,44 @@ static void InitCraftMenu(void)
     CraftMenuUI_Init();
 }
 
+static void CB2_ReturnToCraftMenu(void)
+{
+    gFieldCallback = ReturnToField_OpenCraftMenu;
+    SetMainCallback2(CB2_ReturnToField);
+}
+
+static void Task_OpenBagFromCraftMenu(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        CraftMenuUI_Close();
+        CleanupOverworldWindowsAndTilemaps();
+        SetBagPreOpenCallback(BagPreOpen_SetCursorItem);
+        GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
+        DestroyTask(taskId);
+    }
+}
+
+static void OpenBagFromCraftMenu(void)
+{
+    gCraftActiveSlot = CraftMenuUI_GetCursorPos();
+    FadeScreen(FADE_TO_BLACK, 0);
+    CreateTask(Task_OpenBagFromCraftMenu, 0);
+}
+
 static bool8 HandleCraftMenuInput(void)
 {
     if (JOY_NEW(B_BUTTON))
     {
         PlaySE(SE_SELECT);
         CloseCraftMenu();
+        return TRUE;
+    }
+
+    if (JOY_NEW(A_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        OpenBagFromCraftMenu();
         return TRUE;
     }
 
@@ -68,4 +105,9 @@ static void CloseCraftMenu(void)
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
     ScriptContext_Enable();
+}
+
+void CB2_OpenCraftMenu(void)
+{
+    StartCraftMenu();
 }

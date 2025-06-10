@@ -1709,5 +1709,7 @@ static void Task_WaitForFade_ShowCraftMenu(u8 taskId)
 
 void ReturnToField_OpenCraftMenu(void)
 {
-    SetMainCallback2(CB2_ReturnToField_OpenCraftMenu);
+    FadeInFromBlack();
+    CreateTask(Task_WaitForFade_ShowCraftMenu, 0x50);
+    LockPlayerFieldControls();
 }
