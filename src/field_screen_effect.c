@@ -52,6 +52,8 @@ static bool32 WaitForWeatherFadeIn(void);
 static void Task_SpinEnterWarp(u8 taskId);
 static void Task_EnableScriptAfterMusicFade(u8 taskId);
 
+static void Task_WaitForFade_ShowCraftMenu(u8 taskId);
+
 static void ExitStairsMovement(s16*, s16*, s16*, s16*, s16*);
 static void GetStairsMovementDirection(u32, s16*, s16*);
 static void Task_ExitStairs(u8);
