@@ -677,7 +677,7 @@ void HandleInputChooseMove(u32 battler)
     if (JOY_NEW(A_BUTTON) && !gBattleStruct->descriptionSubmenu)
     {
         TryToHideMoveInfoWindow();
-        TryToHideFalseSwipeWindow();
+        TryToHideDontKoWindow();
         PlaySE(SE_SELECT);
 
         moveTarget = GetBattlerMoveTargetType(battler, moveInfo->moves[gMoveSelectionCursor[battler]]);
@@ -786,7 +786,7 @@ void HandleInputChooseMove(u32 battler)
             HideGimmickTriggerSprite();
             PlayerBufferExecCompleted(battler);
             TryToHideMoveInfoWindow();
-            TryToHideFalseSwipeWindow();
+            TryToHideDontKoWindow();
         }
     }
     else if (JOY_NEW(DPAD_LEFT) && !gBattleStruct->zmove.viewing)
@@ -903,7 +903,7 @@ void HandleInputChooseMove(u32 battler)
         {
             gBattleStruct->falseSwipeActive ^= 1;
             PlaySE(SE_SELECT);
-            PrintOnFalseSwipeWindow(gBattleStruct->falseSwipeActive);
+            PrintOnDontKoWindow(gBattleStruct->falseSwipeActive);
         }
     }
     else if (JOY_NEW(START_BUTTON))
@@ -2168,7 +2168,7 @@ void PlayerHandleChooseMove(u32 battler)
         InitMoveSelectionsVarsAndStrings(battler);
         gBattleStruct->gimmick.playerSelect = FALSE;
         TryToAddMoveInfoWindow();
-        TryToAddFalseSwipeWindow();
+        TryToAddDontKoWindow();
 
         AssignUsableZMoves(battler, moveInfo->moves);
         gBattleStruct->zmove.viable = (gBattleStruct->zmove.possibleZMoves[battler] & (1u << gMoveSelectionCursor[battler])) != 0;

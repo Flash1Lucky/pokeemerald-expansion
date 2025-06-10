@@ -2903,7 +2903,7 @@ static const struct SpriteTemplate sSpriteTemplate_LastUsedBallWindow =
 };
 
 #define MOVE_INFO_WINDOW_TAG 0xE722
-#define FALSE_SWIPE_WINDOW_TAG 0xE723
+#define DONT_KO_WINDOW_TAG 0xE723
 
 static const struct OamData sOamData_MoveInfoWindow =
 {
@@ -2930,21 +2930,21 @@ static const struct SpriteTemplate sSpriteTemplate_MoveInfoWindow =
     .anims = gDummySpriteAnimTable,
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCB_FalseSwipeWin
+static const struct OamData sOamData_DontKoWindow =
 };
 
-static const struct OamData sOamData_FalseSwipeWindow =
+static const struct SpriteTemplate sSpriteTemplate_DontKoWindow =
 {
-    .y = 0,
-    .affineMode = 0,
-    .objMode = 0,
-    .mosaic = 0,
-    .bpp = 0,
-    .shape = SPRITE_SHAPE(32x32),
-    .x = 0,
-    .matrixNum = 0,
-    .size = SPRITE_SIZE(32x32),
-    .tileNum = 0,
+    .tileTag = DONT_KO_WINDOW_TAG,
+    .oam = &sOamData_DontKoWindow,
+static const u8 sDontKoWindowGfx[] = INCBIN_U8("graphics/battle_interface/move_info_window_r.4bpp");
+static const struct SpriteSheet sSpriteSheet_DontKoWindow =
+    sDontKoWindowGfx, sizeof(sDontKoWindowGfx), DONT_KO_WINDOW_TAG
+static u8 *AddTextPrinterAndCreateDontKoWindow(const u8 *str, u32 x, u32 y, u32 color1, u32 color2, u32 color3, u32 *windowId)
+static void TextIntoDontKoWindow(void *dest, u8 *windowTileData)
+void PrintOnDontKoWindow(bool32 active)
+    windowTileData = AddTextPrinterAndCreateDontKoWindow(
+    TextIntoDontKoWindow((void *)(OBJ_VRAM0 + gSprites[gBattleStruct->falseSwipeSpriteId].oam.tileNum * 32), windowTileData);
     .priority = 1,
     .paletteNum = 0,
     .affineParam = 0,
@@ -3135,13 +3135,13 @@ void TryAddLastUsedBallItemSprites(void)
 
     // window
     LoadSpritePalette(&sSpritePalette_AbilityPopUp);
-    if (GetSpriteTileStartByTag(LAST_BALL_WINDOW_TAG) == 0xFFFF)
-        LoadSpriteSheet(&sSpriteSheet_LastUsedBallWindow);
-
-    if (gBattleStruct->ballSpriteIds[1] == MAX_SPRITES)
-    {
-        gBattleStruct->ballSpriteIds[1] = CreateSprite(&sSpriteTemplate_LastUsedBallWindow,
-                                                       LAST_BALL_WIN_X_0,
+void TryToAddDontKoWindow(void)
+    if (GetSpriteTileStartByTag(DONT_KO_WINDOW_TAG) == 0xFFFF)
+        LoadSpriteSheet(&sSpriteSheet_DontKoWindow);
+        gBattleStruct->falseSwipeSpriteId = CreateSprite(&sSpriteTemplate_DontKoWindow, LAST_BALL_WIN_X_0, LAST_USED_WIN_Y, 6);
+    PrintOnDontKoWindow(gBattleStruct->falseSwipeActive);
+void TryToHideDontKoWindow(void)
+    FreeSpriteTilesByTag(DONT_KO_WINDOW_TAG);
                                                        LAST_USED_WIN_Y, 5);
         gSprites[gBattleStruct->ballSpriteIds[1]].sHide = FALSE;
         gSprites[gBattleStruct->moveInfoSpriteId].sHide = TRUE;

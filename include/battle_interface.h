@@ -138,8 +138,8 @@ void UpdateAbilityPopup(u8 battlerId);
 void CategoryIcons_LoadSpritesGfx(void);
 void TryToAddMoveInfoWindow(void);
 void TryToHideMoveInfoWindow(void);
-void TryToAddFalseSwipeWindow(void);
-void TryToHideFalseSwipeWindow(void);
-void PrintOnFalseSwipeWindow(bool32 active);
+void TryToAddDontKoWindow(void);
+void TryToHideDontKoWindow(void);
+void PrintOnDontKoWindow(bool32 active);
 
 #endif // GUARD_BATTLE_INTERFACE_H
