@@ -2993,6 +2993,48 @@ static const struct SpriteSheet sSpriteSheet_FalseSwipeWindow =
     sFalseSwipeWindowGfx, sizeof(sFalseSwipeWindowGfx), FALSE_SWIPE_WINDOW_TAG
 };
 
+#define FALSE_SWIPE_TEXT_WIDTH 4
+static const u8 sDontKoText[] = _("Don't KO");
+
+static u8 *AddTextPrinterAndCreateWindowOnFalseSwipe(const u8 *str, u32 x, u32 y, u32 color1, u32 color2, u32 color3, u32 *windowId)
+{
+    u8 color[3] = {color1, color2, color3};
+    struct WindowTemplate winTemplate = {0};
+
+    winTemplate.width = FALSE_SWIPE_TEXT_WIDTH;
+    winTemplate.height = 2;
+
+    *windowId = AddWindow(&winTemplate);
+    FillWindowPixelBuffer(*windowId, PIXEL_FILL(color1));
+
+    AddTextPrinterParameterized4(*windowId, FONT_SMALL, x, y, 0, 0, color, TEXT_SKIP_DRAW, str);
+    return (u8 *)(GetWindowAttribute(*windowId, WINDOW_TILE_DATA));
+}
+
+static void TextIntoFalseSwipeWindow(void *dest, u8 *windowTileData)
+{
+    CpuCopy32(windowTileData + 256, dest + 256, FALSE_SWIPE_TEXT_WIDTH * TILE_SIZE_4BPP);
+    for (int i = 0; i < FALSE_SWIPE_TEXT_WIDTH; i++)
+    {
+        CpuCopy32(windowTileData + 20, dest + 20, 12);
+        dest += 32;
+        windowTileData += 32;
+    }
+}
+
+void PrintOnFalseSwipeWindow(bool32 active)
+{
+    u32 windowId;
+    u8 *windowTileData;
+
+    if (gBattleStruct->falseSwipeSpriteId == MAX_SPRITES)
+        return;
+
+    windowTileData = AddTextPrinterAndCreateWindowOnFalseSwipe(sDontKoText, 1, 0, 7, active ? 7 : 11, 1, &windowId);
+    TextIntoFalseSwipeWindow((void *)(OBJ_VRAM0 + gSprites[gBattleStruct->falseSwipeSpriteId].oam.tileNum * 32), windowTileData);
+    RemoveWindow(windowId);
+}
+
 #define LAST_USED_BALL_X_F    14
 #define LAST_USED_BALL_X_0    -14
 #define LAST_USED_BALL_Y      ((IsDoubleBattle()) ? 78 : 68)
@@ -3125,6 +3167,9 @@ void TryToAddFalseSwipeWindow(void)
         gBattleStruct->falseSwipeSpriteId = CreateSprite(&sSpriteTemplate_FalseSwipeWindow, LAST_BALL_WIN_X_0, LAST_USED_WIN_Y, 6);
         gSprites[gBattleStruct->falseSwipeSpriteId].sHide = FALSE;
     }
+
+    PrintOnFalseSwipeWindow(gBattleStruct->falseSwipeActive);
+
 }
 
 void TryToHideFalseSwipeWindow(void)

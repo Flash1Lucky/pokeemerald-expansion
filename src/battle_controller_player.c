@@ -903,6 +903,7 @@ void HandleInputChooseMove(u32 battler)
         {
             gBattleStruct->falseSwipeActive ^= 1;
             PlaySE(SE_SELECT);
+            PrintOnFalseSwipeWindow(gBattleStruct->falseSwipeActive);
         }
     }
     else if (JOY_NEW(START_BUTTON))
