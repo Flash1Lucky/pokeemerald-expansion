@@ -17,6 +17,7 @@ static void Task_RunCraftMenu(u8 taskId);
 static void InitCraftMenu(void);
 static bool8 HandleCraftMenuInput(void);
 static void CloseCraftMenu(void);
+static void CB2_ReturnToCraftMenu(void);
 
 void StartCraftMenu(void)
 {
