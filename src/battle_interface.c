@@ -3169,6 +3169,7 @@ void TryToAddFalseSwipeWindow(void)
     }
 
     PrintOnFalseSwipeWindow(gBattleStruct->falseSwipeActive);
+
 }
 
 void TryToHideFalseSwipeWindow(void)

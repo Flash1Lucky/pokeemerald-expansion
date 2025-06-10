@@ -142,4 +142,5 @@ void TryToAddFalseSwipeWindow(void);
 void TryToHideFalseSwipeWindow(void);
 void PrintOnFalseSwipeWindow(bool32 active);
 
+
 #endif // GUARD_BATTLE_INTERFACE_H
