@@ -71,31 +71,37 @@ void CB2_CraftDebugMenu(void)
     default:
     case 0:
         SetVBlankCallback(NULL);
+        gMain.state++;
+        break;
+    case 1:
+        ResetVramOamAndBgCntRegs();
         SetGpuReg(REG_OFFSET_DISPCNT, 0);
         ResetBgsAndClearDma3BusyFlags(0);
         InitBgsFromTemplates(0, sBgTemplate, ARRAY_COUNT(sBgTemplate));
         ResetAllBgsCoordinates();
         FreeAllWindowBuffers();
-        InitWindows(&sDebugWindowTemplate);
         DeactivateAllTextPrinters();
+        ResetTasks();
+        ResetSpriteData();
         SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
         ShowBg(0);
         gMain.state++;
         break;
-    case 1:
+    case 2:
+        InitWindows(&sDebugWindowTemplate);
         LoadMessageBoxAndBorderGfx();
         ResetPaletteFade();
         LoadPalette(sBgColor, 0, 2);
         LoadPalette(GetOverworldTextboxPalettePtr(), 0xf0, 16);
         gMain.state++;
         break;
-    case 2:
+    case 3:
         CreateTask(Task_CraftDebugMenu, 0);
         SetVBlankCallback(VBlankCB);
         SetMainCallback2(MainCB2);
         gMain.state++;
         break;
-    case 3:
+    case 4:
         break;
     }
 }
@@ -136,6 +142,7 @@ static void Task_CraftDebugMenu(u8 taskId)
     {
     case 0:
         gTasks[taskId].tWindowId = AddWindow(&sDebugWindowTemplate);
+        PutWindowTilemap(gTasks[taskId].tWindowId);
         DrawStdFrameWithCustomTileAndPalette(gTasks[taskId].tWindowId, TRUE, 0x214, 14);
         PrintSlots(gTasks[taskId].tWindowId);
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
