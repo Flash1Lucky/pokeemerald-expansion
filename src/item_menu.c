@@ -2395,7 +2395,7 @@ static void FinishCraftSelection(u8 taskId)
 
     CraftLogic_SetSlot(gCraftActiveSlot, gSpecialVar_ItemId, tItemCount);
     RemoveBagItem(gSpecialVar_ItemId, tItemCount);
-    gBagMenu->newScreenCallback = CB2_OpenCraftMenu;
+    gBagMenu->newScreenCallback = CB2_ReturnToCraftMenu;
     Task_FadeAndCloseBagMenu(taskId);
 }
 

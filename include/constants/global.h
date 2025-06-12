@@ -4,6 +4,7 @@
 #include "config/general.h"
 #include "config/battle.h"
 #include "config/debug.h"
+#include "config/crafting.h"
 #include "config/item.h"
 #include "config/caps.h"
 #include "config/pokemon.h"
