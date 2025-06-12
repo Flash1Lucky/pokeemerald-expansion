@@ -37,10 +37,10 @@ static const struct BgTemplate sBgTemplate[] =
 static const struct WindowTemplate sDebugWindowTemplate =
 {
     .bg = 0,
-    .tilemapLeft = 1,
-    .tilemapTop = 2,
-    .width = 18,
-    .height = 12,
+    .tilemapLeft = 0,
+    .tilemapTop = 0,
+    .width = 30,
+    .height = 20,
     .paletteNum = 15,
     .baseBlock = 0x1A0
 };
@@ -104,9 +104,12 @@ static void PrintSlots(u8 windowId)
 {
     u8 i;
     FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+
+    AddTextPrinterParameterized3(windowId, FONT_NORMAL, 1, 1, sDebugTextColor, 0, (const u8*)"Craft Debug Menu");
+
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
     {
-        u8 y = i * 10;
+        u8 y = 16 + i * 12;
         ConvertIntToDecimalStringN(gStringVar3, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
         StringCopy(gStringVar4, gStringVar3);
         StringAppend(gStringVar4, (const u8*)": ");
@@ -135,7 +138,7 @@ static void Task_CraftDebugMenu(u8 taskId)
         gTasks[taskId].tWindowId = AddWindow(&sDebugWindowTemplate);
         DrawStdFrameWithCustomTileAndPalette(gTasks[taskId].tWindowId, TRUE, 0x214, 14);
         PrintSlots(gTasks[taskId].tWindowId);
-        BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_WHITE);
+        BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
         gTasks[taskId].tState++;
         break;
     case 1:
@@ -145,7 +148,7 @@ static void Task_CraftDebugMenu(u8 taskId)
     case 2:
         if (JOY_NEW(B_BUTTON | A_BUTTON))
         {
-            BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_WHITE);
+            BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
             gTasks[taskId].tState++;
         }
         break;

@@ -78,6 +78,17 @@ static void Task_WaitFadeAndOpenBag(u8 taskId)
     }
 }
 
+static void Task_WaitFadeAndOpenDebugMenu(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        gCraftActiveSlot = CraftMenuUI_GetCursorPos();
+        CraftMenuUI_Close();
+        SetMainCallback2(CB2_CraftDebugMenu);
+        DestroyTask(taskId);
+    }
+}
+
 static void OpenBagFromCraftMenu(void)
 {
     FadeScreen(FADE_TO_BLACK, 0);
@@ -104,9 +115,8 @@ static bool8 HandleCraftMenuInput(void)
     if (JOY_NEW(R_BUTTON))
     {
         PlaySE(SE_SELECT);
-        gCraftActiveSlot = CraftMenuUI_GetCursorPos();
-        CraftMenuUI_Close();
-        SetMainCallback2(CB2_CraftDebugMenu);
+        FadeScreen(FADE_TO_BLACK, 0);
+        CreateTask(Task_WaitFadeAndOpenDebugMenu, 0);
         return TRUE;
     }
 #endif
