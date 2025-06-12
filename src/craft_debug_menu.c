@@ -6,6 +6,8 @@
 #include "text_window.h"
 #include "text.h"
 #include "string_util.h"
+#include "strings.h"
+#include "menu_helpers.h"
 #include "main.h"
 #include "menu.h"
 #include "craft_logic.h"

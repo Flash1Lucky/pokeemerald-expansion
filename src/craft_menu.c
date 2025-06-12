@@ -14,6 +14,7 @@
 #include "craft_debug_menu.h"
 #include "config/crafting.h"
 #include "field_screen_effect.h"
+#include "field_weather.h"
 #include "palette.h"
 #include "overworld.h"
 
