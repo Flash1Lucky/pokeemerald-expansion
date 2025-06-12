@@ -124,10 +124,10 @@ static void PrintSlots(u8 windowId)
 
         if (gCraftSlots[i].itemId != ITEM_NONE)
         {
-            CopyItemName(gCraftSlots[i].itemId, gStringVar1);
-            StringAppend(lineBuffer, gStringVar1);
+            CopyItemName(gCraftSlots[i].itemId, gStringVar2);
+            StringAppend(lineBuffer, gStringVar2);
 
-            ConvertIntToDecimalStringN(qtyStr, gCraftSlots[i].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
+            ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[i].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
             StringExpandPlaceholders(qtyStr, gText_xVar1);
             StringAppend(lineBuffer, qtyStr);
         }
