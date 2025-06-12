@@ -115,24 +115,30 @@ static void PrintSlots(u8 windowId)
 
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
     {
+        u8 lineBuffer[40];
+        u8 qtyStr[10];
         u8 y = 16 + i * 12;
-        ConvertIntToDecimalStringN(gStringVar3, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
-        StringCopy(gStringVar4, gStringVar3);
-        StringAppend(gStringVar4, (const u8*)": ");
+
+        ConvertIntToDecimalStringN(lineBuffer, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
+        StringAppend(lineBuffer, (const u8*)": ");
+
         if (gCraftSlots[i].itemId != ITEM_NONE)
         {
-            CopyItemName(gCraftSlots[i].itemId, gStringVar2);
-            StringAppend(gStringVar4, gStringVar2);
-            ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[i].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
-            StringExpandPlaceholders(gStringVar2, gText_xVar1);
-            StringAppend(gStringVar4, gStringVar2);
+            CopyItemName(gCraftSlots[i].itemId, gStringVar1);
+            StringAppend(lineBuffer, gStringVar1);
+
+            ConvertIntToDecimalStringN(qtyStr, gCraftSlots[i].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
+            StringExpandPlaceholders(qtyStr, gText_xVar1);
+            StringAppend(lineBuffer, qtyStr);
         }
         else
         {
-            StringAppend(gStringVar4, gText_None);
+            StringAppend(lineBuffer, gText_None);
         }
-        AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, gStringVar4);
+
+        AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, lineBuffer);
     }
+
     CopyWindowToVram(windowId, COPYWIN_FULL);
 }
 
