@@ -4053,8 +4053,8 @@ BattleScript_EffectSpikes::
 	goto BattleScript_MoveEnd
 
 BattleScript_EffectForesight::
-	attackcanceler
-	attackstring
+        attackcanceler
+        attackstring
 	ppreduce
 	accuracycheck BattleScript_ButItFailed, NO_ACC_CALC_CHECK_LOCK_ON
 	jumpifstatus2 BS_TARGET, STATUS2_FORESIGHT, BattleScript_ButItFailed
@@ -4063,6 +4063,17 @@ BattleScript_IdentifiedFoe:
 	attackanimation
 	waitanimation
 	printstring STRINGID_PKMNIDENTIFIED
+	waitmessage B_WAIT_TIME_LONG
+	goto BattleScript_MoveEnd
+
+BattleScript_EffectApplyShield::
+	attackcanceler
+	attackstring
+	ppreduce
+	attackanimation
+	waitanimation
+	addshield 25
+	printstring STRINGID_PKMNGAINEDSHIELD
 	waitmessage B_WAIT_TIME_LONG
 	goto BattleScript_MoveEnd
 

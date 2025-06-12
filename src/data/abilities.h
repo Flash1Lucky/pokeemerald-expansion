@@ -2408,4 +2408,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .cantBeSwapped = TRUE,
         .cantBeTraced = TRUE,
     },
+
+    [ABILITY_LAYERED] =
+    {
+        .name = _("Layered"),
+        .description = COMPOUND_STRING("Starts battle with 50% shield."),
+        .aiRating = 5,
+    },
 };
