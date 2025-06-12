@@ -11,6 +11,7 @@
 #include "sprite.h"
 #include "decompress.h"
 #include "strings.h"
+#include "string_util.h"
 #include "item_icon.h"
 #include "item_menu.h"
 #include "craft_menu.h"
@@ -29,6 +30,7 @@
 #define TAG_WB_BOTMID      0x4008
 #define TAG_WB_BOTRIGHT    0x4009
 #define TAG_WB_PALETTE     0x4010
+#define TAG_CRAFT_ICON_BASE 0x5200
 
 #define WB_CENTER_X 120
 #define WB_CENTER_Y 60
@@ -167,6 +169,7 @@ static void UpdateCraftInfoWindow(void)
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_SMALL, 175, 2, sInputTextColor, 0, sText_CraftingUi_RecipeBook);
 }
 
+
 static void CreateWorkbenchSprite(void)
 {
     int row, col, i;
@@ -193,7 +196,7 @@ static void DestroyWorkbenchSprite(void)
     {
         if (sWorkbenchSpriteIds[i] != SPRITE_NONE)
         {
-            DestroySprite(&gSprites[sWorkbenchSpriteIds[i]]);
+            DestroySpriteAndFreeResources(&gSprites[sWorkbenchSpriteIds[i]]);
             sWorkbenchSpriteIds[i] = SPRITE_NONE;
         }
     }
@@ -209,20 +212,21 @@ static void DestroyWorkbenchSprite(void)
     FreeSpritePaletteByTag(TAG_WB_PALETTE);
 }
 
-static void DrawCraftingIcons(void)
+void CraftMenuUI_DrawIcons(void)
 {
     int i;
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
     {
         if (sCraftSlotSpriteIds[i] != SPRITE_NONE)
         {
-            DestroySprite(&gSprites[sCraftSlotSpriteIds[i]]);
+            DestroySpriteAndFreeResources(&gSprites[sCraftSlotSpriteIds[i]]);
             sCraftSlotSpriteIds[i] = SPRITE_NONE;
         }
 
         if (gCraftSlots[i].itemId != ITEM_NONE)
         {
-            u8 spriteId = AddItemIconSprite(gCraftSlots[i].itemId, gCraftSlots[i].itemId, gCraftSlots[i].itemId);
+            u16 tag = TAG_CRAFT_ICON_BASE + i;
+            u8 spriteId = AddItemIconSprite(tag, tag, gCraftSlots[i].itemId);
             if (spriteId != MAX_SPRITES)
             {
                 sCraftSlotSpriteIds[i] = spriteId;
@@ -246,7 +250,6 @@ void CraftMenuUI_UpdateGrid(void)
             AddTextPrinterParameterized3(sCraftGridWindowId, FONT_NORMAL, pos->x - 14, pos->y, sGridTextColor, 0, gText_SelectorArrow2);
         }
     }
-    DrawCraftingIcons();
     CopyWindowToVram(sCraftGridWindowId, COPYWIN_FULL);
 }
 
@@ -280,6 +283,7 @@ void CraftMenuUI_Init(void)
     ShowGridWindow();
     ShowInfoWindow();
     CreateWorkbenchSprite();
+    CraftMenuUI_DrawIcons();
     UpdateCraftInfoWindow();
     CraftMenuUI_UpdateGrid();
 }
@@ -287,6 +291,7 @@ void CraftMenuUI_Init(void)
 void CraftMenuUI_Close(void)
 {
     int i;
+    gCraftActiveSlot = sCraftCursorPos;
     ClearStdWindowAndFrame(sCraftGridWindowId, TRUE);
     if (sCraftGridWindowId != WINDOW_NONE)
     {
@@ -304,7 +309,7 @@ void CraftMenuUI_Close(void)
     {
         if (sCraftSlotSpriteIds[i] != SPRITE_NONE)
         {
-            DestroySprite(&gSprites[sCraftSlotSpriteIds[i]]);
+            DestroySpriteAndFreeResources(&gSprites[sCraftSlotSpriteIds[i]]);
             sCraftSlotSpriteIds[i] = SPRITE_NONE;
         }
     }
@@ -316,4 +321,14 @@ u8 CraftMenuUI_GetCursorPos(void)
 {
     return sCraftCursorPos;
 }
+
+void CraftMenuUI_SetCursorPos(u8 pos)
+{
+    if (pos < CRAFT_SLOT_COUNT)
+        sCraftCursorPos = pos;
+    else
+        sCraftCursorPos = 0;
+    CraftMenuUI_UpdateGrid();
+}
+
 

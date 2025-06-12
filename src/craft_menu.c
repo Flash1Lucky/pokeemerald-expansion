@@ -11,13 +11,20 @@
 #include "craft_logic.h"
 #include "item_menu.h"
 #include "craft_menu.h"
+#include "craft_debug.h"
+#include "config/crafting.h"
+#include "field_screen_effect.h"
+#include "field_weather.h"
+#include "palette.h"
+#include "overworld.h"
 
 static void Task_EnterCraftMenu(u8 taskId);
 static void Task_RunCraftMenu(u8 taskId);
 static void InitCraftMenu(void);
 static bool8 HandleCraftMenuInput(void);
 static void CloseCraftMenu(void);
-static void CB2_ReturnToCraftMenu(void);
+static void CraftMenu_ReshowAfterBagMenu(void);
+void CB2_ReturnToCraftMenu(void);
 
 void StartCraftMenu(void)
 {
@@ -41,23 +48,51 @@ static void Task_RunCraftMenu(u8 taskId)
         DestroyTask(taskId);
 }
 
+static bool8 sKeepSlots = FALSE;
+
 static void InitCraftMenu(void)
 {
-    CraftLogic_InitSlots();
+    if (!sKeepSlots)
+        CraftLogic_InitSlots();
     CraftMenuUI_Init();
+    if (sKeepSlots)
+        CraftMenuUI_SetCursorPos(gCraftActiveSlot);
+    sKeepSlots = FALSE;
 }
 
-static void CB2_ReturnToCraftMenu(void)
+void CB2_ReturnToCraftMenu(void)
 {
-    SetMainCallback2(CB2_OpenCraftMenu);
+    gFieldCallback = CraftMenu_ReshowAfterBagMenu;
+    SetMainCallback2(CB2_ReturnToField);
+}
+
+static void Task_WaitFadeAndOpenBag(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        gCraftActiveSlot = CraftMenuUI_GetCursorPos();
+        CraftMenuUI_Close();
+        SetBagPreOpenCallback(BagPreOpen_SetCursorItem);
+        GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
+        DestroyTask(taskId);
+    }
+}
+
+static void Task_WaitFadeAndOpenDebugMenu(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        gCraftActiveSlot = CraftMenuUI_GetCursorPos();
+        CraftMenuUI_Close();
+        SetMainCallback2(CB2_CraftDebugMenu);
+        DestroyTask(taskId);
+    }
 }
 
 static void OpenBagFromCraftMenu(void)
 {
-    gCraftActiveSlot = CraftMenuUI_GetCursorPos();
-    CraftMenuUI_Close();
-    SetBagPreOpenCallback(BagPreOpen_SetCursorItem);
-    GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
+    FadeScreen(FADE_TO_BLACK, 0);
+    CreateTask(Task_WaitFadeAndOpenBag, 0);
 }
 
 static bool8 HandleCraftMenuInput(void)
@@ -75,6 +110,16 @@ static bool8 HandleCraftMenuInput(void)
         OpenBagFromCraftMenu();
         return TRUE;
     }
+
+#if DEBUG_CRAFT_MENU
+    if (JOY_NEW(R_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        FadeScreen(FADE_TO_BLACK, 0);
+        CreateTask(Task_WaitFadeAndOpenDebugMenu, 0);
+        return TRUE;
+    }
+#endif
 
     if (CraftMenuUI_HandleDpadInput())
     {
@@ -96,4 +141,12 @@ static void CloseCraftMenu(void)
 void CB2_OpenCraftMenu(void)
 {
     StartCraftMenu();
+    SetMainCallback2(CB2_Overworld);
+}
+
+static void CraftMenu_ReshowAfterBagMenu(void)
+{
+    sKeepSlots = TRUE;
+    StartCraftMenu();
+    FadeInFromBlack();
 }
