@@ -90,6 +90,54 @@ static void VBlankCB(void)
     TransferPlttBuffer();
 }
 
+static void PrintSlots(u8 windowId)
+{
+    u8 i;
+
+    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+
+    for (i = 0; i < CRAFT_SLOT_COUNT; i++)
+    {
+        u8 lineBuffer[64];
+        u8 qtyBuffer[16];
+        u8 itemName[32];
+        u8 numBuffer[4];
+        u8 y = i * 12;
+
+        StringCopy(lineBuffer, sText_SlotLabel);
+        ConvertIntToDecimalStringN(numBuffer, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
+        StringAppend(lineBuffer, numBuffer);
+        StringAppend(lineBuffer, sText_ColonSpace);
+
+        if (gCraftSlots[i].itemId != ITEM_NONE)
+        {
+            CopyItemName(gCraftSlots[i].itemId, itemName);
+            StringAppend(lineBuffer, itemName);
+
+            ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[i].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
+            StringExpandPlaceholders(qtyBuffer, gText_xVar1);
+            StringAppend(lineBuffer, qtyBuffer);
+        }
+        else
+        {
+            StringAppend(lineBuffer, sText_None);
+        }
+
+        AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, lineBuffer);
+    }
+
+    CopyWindowToVram(windowId, COPYWIN_FULL);
+}
+
+static void PrintTitle(u8 windowId)
+{
+    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+    {
+        int x = (DISPLAY_WIDTH - GetStringWidth(FONT_NORMAL, sText_DebugMenuTitle, 0)) / 2;
+        AddTextPrinterParameterized3(windowId, FONT_NORMAL, x, 1, sDebugTextColor, 0, sText_DebugMenuTitle);
+    }
+    CopyWindowToVram(windowId, COPYWIN_FULL);
+
 void CB2_CraftDebugMenu(void)
 {
     switch (gMain.state)
@@ -144,53 +192,6 @@ void CB2_CraftDebugMenu(void)
     }
 }
 
-static void PrintSlots(u8 windowId)
-{
-    u8 i;
-
-    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
-
-    for (i = 0; i < CRAFT_SLOT_COUNT; i++)
-    {
-        u8 lineBuffer[64];
-        u8 qtyBuffer[16];
-        u8 itemName[32];
-        u8 numBuffer[4];
-        u8 y = i * 12;
-
-        StringCopy(lineBuffer, sText_SlotLabel);
-        ConvertIntToDecimalStringN(numBuffer, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
-        StringAppend(lineBuffer, numBuffer);
-        StringAppend(lineBuffer, sText_ColonSpace);
-
-        if (gCraftSlots[i].itemId != ITEM_NONE)
-        {
-            CopyItemName(gCraftSlots[i].itemId, itemName);
-            StringAppend(lineBuffer, itemName);
-
-            ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[i].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
-            StringExpandPlaceholders(qtyBuffer, gText_xVar1);
-            StringAppend(lineBuffer, qtyBuffer);
-        }
-        else
-        {
-            StringAppend(lineBuffer, sText_None);
-        }
-
-        AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, lineBuffer);
-    }
-
-    CopyWindowToVram(windowId, COPYWIN_FULL);
-}
-
-static void PrintTitle(u8 windowId)
-{
-    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
-    {
-        int x = (DISPLAY_WIDTH - GetStringWidth(FONT_NORMAL, sText_DebugMenuTitle, 0)) / 2;
-        AddTextPrinterParameterized3(windowId, FONT_NORMAL, x, 1, sDebugTextColor, 0, sText_DebugMenuTitle);
-    }
-    CopyWindowToVram(windowId, COPYWIN_FULL);
 }
 
 static void Task_CraftDebugMenu(u8 taskId)
