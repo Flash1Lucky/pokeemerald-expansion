@@ -11,7 +11,7 @@
 #include "craft_logic.h"
 #include "item_menu.h"
 #include "craft_menu.h"
-#include "craft_debug_menu.h"
+#include "craft_debug.h"
 #include "config/crafting.h"
 #include "field_screen_effect.h"
 #include "field_weather.h"

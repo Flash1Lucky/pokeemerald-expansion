@@ -12,7 +12,7 @@
 #include "menu.h"
 #include "craft_logic.h"
 #include "craft_menu.h"
-#include "craft_debug_menu.h"
+#include "craft_debug.h"
 #include "constants/rgb.h"
 
 static const u8 sDebugTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
@@ -106,25 +106,37 @@ void CB2_CraftDebugMenu(void)
         DeactivateAllTextPrinters();
         ResetTasks();
         ResetSpriteData();
-        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
         ShowBg(0);
         gMain.state++;
         break;
     case 2:
+        ResetPaletteFade();
+        gMain.state++;
+        break;
+    case 3:
         InitWindows(sDebugWindowTemplates);
         LoadMessageBoxAndBorderGfx();
-        ResetPaletteFade();
         LoadPalette(sBgColor, 0, 2);
         LoadPalette(GetOverworldTextboxPalettePtr(), 0xf0, 16);
         gMain.state++;
         break;
-    case 3:
-        CreateTask(Task_CraftDebugMenu, 0);
+    case 4:
+    {
+        u8 taskId = CreateTask(Task_CraftDebugMenu, 0);
+        gTasks[taskId].tTitleWinId = AddWindow(&sDebugWindowTemplates[WIN_TITLE]);
+        gTasks[taskId].tListWinId = AddWindow(&sDebugWindowTemplates[WIN_LIST]);
+        PutWindowTilemap(gTasks[taskId].tTitleWinId);
+        PutWindowTilemap(gTasks[taskId].tListWinId);
+        PrintTitle(gTasks[taskId].tTitleWinId);
+        PrintSlots(gTasks[taskId].tListWinId);
+        BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
+        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
         SetVBlankCallback(VBlankCB);
         SetMainCallback2(MainCB2);
         gMain.state++;
         break;
-    case 4:
+    }
+    case 5:
         break;
     }
 }
@@ -171,7 +183,10 @@ static void PrintSlots(u8 windowId)
 static void PrintTitle(u8 windowId)
 {
     FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
-    AddTextPrinterParameterized3(windowId, FONT_NORMAL, 1, 1, sDebugTextColor, 0, sText_DebugMenuTitle);
+    {
+        int x = (DISPLAY_WIDTH - GetStringWidth(FONT_NORMAL, sText_DebugMenuTitle, 0)) / 2;
+        AddTextPrinterParameterized3(windowId, FONT_NORMAL, x, 1, sDebugTextColor, 0, sText_DebugMenuTitle);
+    }
     CopyWindowToVram(windowId, COPYWIN_FULL);
 }
 
@@ -180,27 +195,17 @@ static void Task_CraftDebugMenu(u8 taskId)
     switch (gTasks[taskId].tState)
     {
     case 0:
-        gTasks[taskId].tTitleWinId = AddWindow(&sDebugWindowTemplates[WIN_TITLE]);
-        gTasks[taskId].tListWinId = AddWindow(&sDebugWindowTemplates[WIN_LIST]);
-        PutWindowTilemap(gTasks[taskId].tTitleWinId);
-        PutWindowTilemap(gTasks[taskId].tListWinId);
-        PrintTitle(gTasks[taskId].tTitleWinId);
-        PrintSlots(gTasks[taskId].tListWinId);
-        BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
-        gTasks[taskId].tState++;
-        break;
-    case 1:
         if (!gPaletteFade.active)
             gTasks[taskId].tState++;
         break;
-    case 2:
+    case 1:
         if (JOY_NEW(B_BUTTON | A_BUTTON))
         {
             BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
             gTasks[taskId].tState++;
         }
         break;
-    case 3:
+    case 2:
         if (!gPaletteFade.active)
         {
             ClearWindowTilemap(gTasks[taskId].tTitleWinId);
