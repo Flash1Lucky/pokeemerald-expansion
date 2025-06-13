@@ -37,22 +37,40 @@ static const struct BgTemplate sBgTemplate[] =
     }
 };
 
-#define WIN_DEBUG 0
 
-static const struct WindowTemplate sDebugWindowTemplate =
+enum
 {
-    .bg = 0,
-    .tilemapLeft = 0,
-    .tilemapTop = 0,
-    .width = 30,
-    .height = 20,
-    .paletteNum = 15,
-    .baseBlock = 0x1A0
+    WIN_TITLE,
+    WIN_LIST,
+};
+
+static const struct WindowTemplate sDebugWindowTemplates[] =
+{
+    [WIN_TITLE] = {
+        .bg = 0,
+        .tilemapLeft = 0,
+        .tilemapTop = 0,
+        .width = 30,
+        .height = 2,
+        .paletteNum = 15,
+        .baseBlock = 0x1A0,
+    },
+    [WIN_LIST] = {
+        .bg = 0,
+        .tilemapLeft = 0,
+        .tilemapTop = 2,
+        .width = 30,
+        .height = 15,
+        .paletteNum = 15,
+        .baseBlock = 0x1DC,
+    },
+    DUMMY_WIN_TEMPLATE,
 };
 
 static void Task_CraftDebugMenu(u8 taskId);
-#define tState      data[0]
-#define tWindowId   data[1]
+#define tState       data[0]
+#define tListWinId   data[1]
+#define tTitleWinId  data[2]
 
 static void MainCB2(void)
 {
@@ -93,7 +111,7 @@ void CB2_CraftDebugMenu(void)
         gMain.state++;
         break;
     case 2:
-        InitWindows(&sDebugWindowTemplate);
+        InitWindows(sDebugWindowTemplates);
         LoadMessageBoxAndBorderGfx();
         ResetPaletteFade();
         LoadPalette(sBgColor, 0, 2);
@@ -116,7 +134,6 @@ static void PrintSlots(u8 windowId)
     u8 i;
 
     FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
-    AddTextPrinterParameterized3(windowId, FONT_NORMAL, 1, 1, sDebugTextColor, 0, sText_DebugMenuTitle);
 
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
     {
@@ -124,7 +141,7 @@ static void PrintSlots(u8 windowId)
         u8 qtyBuffer[16];
         u8 itemName[32];
         u8 numBuffer[4];
-        u8 y = 16 + i * 12;
+        u8 y = i * 12;
 
         StringCopy(lineBuffer, sText_SlotLabel);
         ConvertIntToDecimalStringN(numBuffer, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
@@ -151,14 +168,24 @@ static void PrintSlots(u8 windowId)
     CopyWindowToVram(windowId, COPYWIN_FULL);
 }
 
+static void PrintTitle(u8 windowId)
+{
+    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+    AddTextPrinterParameterized3(windowId, FONT_NORMAL, 1, 1, sDebugTextColor, 0, sText_DebugMenuTitle);
+    CopyWindowToVram(windowId, COPYWIN_FULL);
+}
+
 static void Task_CraftDebugMenu(u8 taskId)
 {
     switch (gTasks[taskId].tState)
     {
     case 0:
-        gTasks[taskId].tWindowId = AddWindow(&sDebugWindowTemplate);
-        PutWindowTilemap(gTasks[taskId].tWindowId);
-        PrintSlots(gTasks[taskId].tWindowId);
+        gTasks[taskId].tTitleWinId = AddWindow(&sDebugWindowTemplates[WIN_TITLE]);
+        gTasks[taskId].tListWinId = AddWindow(&sDebugWindowTemplates[WIN_LIST]);
+        PutWindowTilemap(gTasks[taskId].tTitleWinId);
+        PutWindowTilemap(gTasks[taskId].tListWinId);
+        PrintTitle(gTasks[taskId].tTitleWinId);
+        PrintSlots(gTasks[taskId].tListWinId);
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
         gTasks[taskId].tState++;
         break;
@@ -176,8 +203,10 @@ static void Task_CraftDebugMenu(u8 taskId)
     case 3:
         if (!gPaletteFade.active)
         {
-            ClearWindowTilemap(gTasks[taskId].tWindowId);
-            RemoveWindow(gTasks[taskId].tWindowId);
+            ClearWindowTilemap(gTasks[taskId].tTitleWinId);
+            ClearWindowTilemap(gTasks[taskId].tListWinId);
+            RemoveWindow(gTasks[taskId].tTitleWinId);
+            RemoveWindow(gTasks[taskId].tListWinId);
             DestroyTask(taskId);
             SetMainCallback2(CB2_ReturnToCraftMenu);
         }
@@ -186,4 +215,5 @@ static void Task_CraftDebugMenu(u8 taskId)
 }
 
 #undef tState
-#undef tWindowId
+#undef tListWinId
+#undef tTitleWinId
