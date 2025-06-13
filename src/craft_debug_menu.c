@@ -17,6 +17,11 @@
 
 static const u8 sDebugTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
 
+static const u8 sText_DebugMenuTitle[] = _("Crafting Debug Menu");
+static const u8 sText_SlotLabel[] = _("Slot ");
+static const u8 sText_ColonSpace[] = _(": ");
+static const u8 sText_None[] = _("None");
+
 static const u16 sBgColor[] = { RGB_WHITE };
 
 static const struct BgTemplate sBgTemplate[] =
@@ -109,31 +114,35 @@ void CB2_CraftDebugMenu(void)
 static void PrintSlots(u8 windowId)
 {
     u8 i;
-    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
 
-    AddTextPrinterParameterized3(windowId, FONT_NORMAL, 1, 1, sDebugTextColor, 0, (const u8*)"Craft Debug Menu");
+    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+    AddTextPrinterParameterized3(windowId, FONT_NORMAL, 1, 1, sDebugTextColor, 0, sText_DebugMenuTitle);
 
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
     {
-        u8 lineBuffer[40];
-        u8 qtyStr[10];
+        u8 lineBuffer[64];
+        u8 qtyBuffer[16];
+        u8 itemName[32];
+        u8 numBuffer[4];
         u8 y = 16 + i * 12;
 
-        ConvertIntToDecimalStringN(lineBuffer, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
-        StringAppend(lineBuffer, (const u8*)": ");
+        StringCopy(lineBuffer, sText_SlotLabel);
+        ConvertIntToDecimalStringN(numBuffer, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
+        StringAppend(lineBuffer, numBuffer);
+        StringAppend(lineBuffer, sText_ColonSpace);
 
         if (gCraftSlots[i].itemId != ITEM_NONE)
         {
-            CopyItemName(gCraftSlots[i].itemId, gStringVar2);
-            StringAppend(lineBuffer, gStringVar2);
+            CopyItemName(gCraftSlots[i].itemId, itemName);
+            StringAppend(lineBuffer, itemName);
 
             ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[i].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
-            StringExpandPlaceholders(qtyStr, gText_xVar1);
-            StringAppend(lineBuffer, qtyStr);
+            StringExpandPlaceholders(qtyBuffer, gText_xVar1);
+            StringAppend(lineBuffer, qtyBuffer);
         }
         else
         {
-            StringAppend(lineBuffer, gText_None);
+            StringAppend(lineBuffer, sText_None);
         }
 
         AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, lineBuffer);
@@ -149,7 +158,6 @@ static void Task_CraftDebugMenu(u8 taskId)
     case 0:
         gTasks[taskId].tWindowId = AddWindow(&sDebugWindowTemplate);
         PutWindowTilemap(gTasks[taskId].tWindowId);
-        DrawStdFrameWithCustomTileAndPalette(gTasks[taskId].tWindowId, TRUE, 0x214, 14);
         PrintSlots(gTasks[taskId].tWindowId);
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
         gTasks[taskId].tState++;
@@ -168,7 +176,7 @@ static void Task_CraftDebugMenu(u8 taskId)
     case 3:
         if (!gPaletteFade.active)
         {
-            ClearStdWindowAndFrame(gTasks[taskId].tWindowId, TRUE);
+            ClearWindowTilemap(gTasks[taskId].tWindowId);
             RemoveWindow(gTasks[taskId].tWindowId);
             DestroyTask(taskId);
             SetMainCallback2(CB2_ReturnToCraftMenu);
