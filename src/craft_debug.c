@@ -10,6 +10,7 @@
 #include "menu_helpers.h"
 #include "main.h"
 #include "menu.h"
+#include "task.h"
 #include "craft_logic.h"
 #include "craft_menu.h"
 #include "craft_debug.h"
@@ -67,6 +68,8 @@ static const struct WindowTemplate sDebugWindowTemplates[] =
     DUMMY_WIN_TEMPLATE,
 };
 
+static void PrintTitle(u8 windowId);
+static void PrintSlots(u8 windowId);
 static void Task_CraftDebugMenu(u8 taskId);
 #define tState       data[0]
 #define tListWinId   data[1]
