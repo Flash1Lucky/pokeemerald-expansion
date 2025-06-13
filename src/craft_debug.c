@@ -137,6 +137,7 @@ static void PrintTitle(u8 windowId)
         AddTextPrinterParameterized3(windowId, FONT_NORMAL, x, 1, sDebugTextColor, 0, sText_DebugMenuTitle);
     }
     CopyWindowToVram(windowId, COPYWIN_FULL);
+}
 
 void CB2_CraftDebugMenu(void)
 {
@@ -190,8 +191,6 @@ void CB2_CraftDebugMenu(void)
     case 5:
         break;
     }
-}
-
 }
 
 static void Task_CraftDebugMenu(u8 taskId)
