@@ -590,6 +590,11 @@ void CB2_BagMenuFromStartMenu(void)
     GoToBagMenu(ITEMMENULOCATION_FIELD, POCKETS_COUNT, CB2_ReturnToFieldWithOpenMenu);
 }
 
+void CB2_BagMenuFromCraftMenu(void)
+{
+    GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
+}
+
 void CB2_BagMenuFromBattle(void)
 {
     if (!InBattlePyramid())
@@ -2347,6 +2352,12 @@ static void WaitDepositErrorMessage(u8 taskId)
 static void Task_ItemContext_Craft(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+
+    if (gBagPosition.pocket == KEYITEMS_POCKET || gBagPosition.pocket == TMHM_POCKET)
+    {
+        DisplayItemMessage(taskId, FONT_NORMAL, gText_CantCraftWithItem, HandleErrorMessage);
+        return;
+    }
 
     tItemCount = 1;
     if (tQuantity == 1)

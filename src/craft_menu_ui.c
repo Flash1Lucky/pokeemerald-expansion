@@ -49,7 +49,7 @@ EWRAM_DATA static u8 sCraftCursorPos = 0;
 EWRAM_DATA static u8 sCraftSlotSpriteIds[CRAFT_SLOT_COUNT];
 
 static const u8 sText_CraftingUi_AButton[] = _("{A_BUTTON}");
-static const u8 sText_CraftingUi_AddItem[] = _("Add\nitem");
+static const u8 sText_CraftingUi_AddItem[] = _("Add\nItem");
 static const u8 sText_CraftingUi_BButtonExit[] = _("{B_BUTTON} Exit");
 static const u8 sText_CraftingUi_StartButtonCraft[] = _("{START_BUTTON} Craft");
 static const u8 sText_CraftingUi_SelectButton[] = _("{SELECT_BUTTON}");
