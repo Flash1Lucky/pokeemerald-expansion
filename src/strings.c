@@ -170,6 +170,7 @@ const u8 gText_ThePokemonList[] = _("the POKéMON LIST");
 const u8 gText_TheShop[] = _("the shop");
 const u8 gText_ThePC[] = _("the PC");
 const u8 gText_TheCraftingTable[] = _("the crafting table");
+const u8 gText_PackUpQuestion[] = _("Would you like to pack up?");
 
 const u8 *const gBagMenu_ReturnToStrings[] =
 {

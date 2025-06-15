@@ -5,11 +5,15 @@
 #include "main.h"
 #include "constants/songs.h"
 #include "start_menu.h"
+#include "menu.h"
+#include "menu_helpers.h"
 #include "field_player_avatar.h"
 #include "event_object_lock.h"
 #include "craft_menu_ui.h"
 #include "craft_logic.h"
+#include "item.h"
 #include "item_menu.h"
+#include "strings.h"
 #include "craft_menu.h"
 #include "craft_debug.h"
 #include "config/crafting.h"
@@ -23,6 +27,11 @@ static void Task_RunCraftMenu(u8 taskId);
 static void InitCraftMenu(void);
 static bool8 HandleCraftMenuInput(void);
 static void CloseCraftMenu(void);
+static void Task_PackUpAsk(u8 taskId);
+static void Task_ShowPackUpYesNo(u8 taskId);
+static void PackUpYes(u8 taskId);
+static void PackUpNo(u8 taskId);
+static bool8 CraftMenu_HasItemsOnTable(void);
 static void CraftMenu_ReshowAfterBagMenu(void);
 void CB2_ReturnToCraftMenu(void);
 
@@ -102,8 +111,17 @@ static bool8 HandleCraftMenuInput(void)
     if (JOY_NEW(B_BUTTON))
     {
         PlaySE(SE_SELECT);
-        CloseCraftMenu();
-        return TRUE;
+        if (CraftMenu_HasItemsOnTable())
+        {
+            gMenuCallback = NULL;
+            CreateTask(Task_PackUpAsk, 0);
+            return FALSE;
+        }
+        else
+        {
+            CloseCraftMenu();
+            return TRUE;
+        }
     }
 
     if (JOY_NEW(A_BUTTON))
@@ -138,6 +156,64 @@ static void CloseCraftMenu(void)
     ScriptUnfreezeObjectEvents();
     UnlockPlayerFieldControls();
     ScriptContext_Enable();
+}
+
+static bool8 CraftMenu_HasItemsOnTable(void)
+{
+    int i;
+    for (i = 0; i < CRAFT_SLOT_COUNT; i++)
+    {
+        if (gCraftSlots[i].itemId != ITEM_NONE)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static void PackUpYes(u8 taskId)
+{
+    int i;
+
+    for (i = 0; i < CRAFT_SLOT_COUNT; i++)
+    {
+        if (gCraftSlots[i].itemId != ITEM_NONE)
+        {
+            AddBagItem(gCraftSlots[i].itemId, gCraftSlots[i].quantity);
+            gCraftSlots[i].itemId = ITEM_NONE;
+            gCraftSlots[i].quantity = 0;
+        }
+    }
+
+    CraftMenuUI_ClearPackUpMessage();
+    CloseCraftMenu();
+
+    u8 craftTask = FindTaskIdByFunc(Task_RunCraftMenu);
+    if (craftTask != TASK_NONE)
+        DestroyTask(craftTask);
+
+    DestroyTask(taskId);
+}
+
+static void PackUpNo(u8 taskId)
+{
+    CraftMenuUI_ClearPackUpMessage();
+    gMenuCallback = HandleCraftMenuInput;
+    DestroyTask(taskId);
+}
+
+static const struct YesNoFuncTable sPackUpYesNoFuncs = {
+    .yesFunc = PackUpYes,
+    .noFunc = PackUpNo,
+};
+
+static void Task_ShowPackUpYesNo(u8 taskId)
+{
+    CraftMenuUI_ShowPackUpYesNo();
+    DoYesNoFuncWithChoice(taskId, &sPackUpYesNoFuncs);
+}
+
+static void Task_PackUpAsk(u8 taskId)
+{
+    CraftMenuUI_DisplayPackUpMessage(taskId, Task_ShowPackUpYesNo);
 }
 
 void CB2_OpenCraftMenu(void)

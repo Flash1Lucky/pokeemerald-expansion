@@ -331,4 +331,68 @@ void CraftMenuUI_SetCursorPos(u8 pos)
     CraftMenuUI_UpdateGrid();
 }
 
+// Pack up prompt -----------------------------------------------------------
+
+static const struct WindowTemplate sPackUpMessageWindowTemplate = {
+    .bg = 0,
+    .tilemapLeft = 2,
+    .tilemapTop = 15,
+    .width = 26,
+    .height = 4,
+    .paletteNum = 15,
+    .baseBlock = 145,
+};
+
+static const struct WindowTemplate sPackUpYesNoWindowTemplate = {
+    .bg = 0,
+    .tilemapLeft = 24,
+    .tilemapTop = 9,
+    .width = 5,
+    .height = 4,
+    .paletteNum = 15,
+    .baseBlock = 200,
+};
+
+EWRAM_DATA static u8 sPackUpMessageWindowId = WINDOW_NONE;
+
+void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
+{
+    if (sCraftInfoWindowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
+        RemoveWindow(sCraftInfoWindowId);
+        sCraftInfoWindowId = WINDOW_NONE;
+    }
+
+    sPackUpMessageWindowId = AddWindow(&sPackUpMessageWindowTemplate);
+    LoadMessageBoxAndBorderGfx();
+    StringExpandPlaceholders(gStringVar4, gText_PackUpQuestion);
+    DisplayMessageAndContinueTask(taskId, sPackUpMessageWindowId, DLG_WINDOW_BASE_TILE_NUM,
+                                  DLG_WINDOW_PALETTE_NUM, FONT_NORMAL, GetPlayerTextSpeedDelay(),
+                                  gStringVar4, nextTask);
+    CopyWindowToVram(sPackUpMessageWindowId, COPYWIN_FULL);
+}
+
+void CraftMenuUI_ShowPackUpYesNo(void)
+{
+    CreateYesNoMenu(&sPackUpYesNoWindowTemplate, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 0);
+}
+
+void CraftMenuUI_ClearPackUpMessage(void)
+{
+    if (sPackUpMessageWindowId != WINDOW_NONE)
+    {
+        ClearDialogWindowAndFrame(sPackUpMessageWindowId, TRUE);
+        RemoveWindow(sPackUpMessageWindowId);
+        sPackUpMessageWindowId = WINDOW_NONE;
+    }
+
+    if (sCraftInfoWindowId == WINDOW_NONE)
+    {
+        sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+        ShowInfoWindow();
+        UpdateCraftInfoWindow();
+    }
+}
+
 
