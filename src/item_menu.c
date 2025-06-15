@@ -590,6 +590,11 @@ void CB2_BagMenuFromStartMenu(void)
     GoToBagMenu(ITEMMENULOCATION_FIELD, POCKETS_COUNT, CB2_ReturnToFieldWithOpenMenu);
 }
 
+void CB2_BagMenuFromCraftMenu(void)
+{
+    GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
+}
+
 void CB2_BagMenuFromBattle(void)
 {
     if (!InBattlePyramid())

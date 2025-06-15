@@ -73,7 +73,7 @@ static void Task_WaitFadeAndOpenBag(u8 taskId)
         gCraftActiveSlot = CraftMenuUI_GetCursorPos();
         CraftMenuUI_Close();
         SetBagPreOpenCallback(BagPreOpen_SetCursorItem);
-        GoToBagMenu(ITEMMENULOCATION_CRAFTING, POCKETS_COUNT, CB2_ReturnToCraftMenu);
+        SetMainCallback2(CB2_BagMenuFromCraftMenu);
         DestroyTask(taskId);
     }
 }
@@ -97,6 +97,8 @@ static void OpenBagFromCraftMenu(void)
 
 static bool8 HandleCraftMenuInput(void)
 {
+    if (gPaletteFade.active)
+        return FALSE;
     if (JOY_NEW(B_BUTTON))
     {
         PlaySE(SE_SELECT);
