@@ -14143,7 +14143,7 @@ const struct Item gItemsInfo[] =
     },
     [ITEM_CRAFT_BUNDLE] =
     {
-        .name = _("CRAFT BUNDLE"),
+        .name = _("Craft Bundle"),
         .price = 0,
         .description = COMPOUND_STRING(
             "A roll-out tool kit\n"

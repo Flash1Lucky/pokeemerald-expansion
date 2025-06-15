@@ -39,11 +39,13 @@ enum
 {
     WINDOW_CRAFT_GRID,
     WINDOW_CRAFT_INFO,
+    WINDOW_CRAFT_YESNO,
     NUM_CRAFT_WINDOWS
 };
 
 EWRAM_DATA static u8 sCraftGridWindowId = 0;
 EWRAM_DATA static u8 sCraftInfoWindowId = 0;
+EWRAM_DATA static u8 sPackUpMessageWindowId = 0;
 EWRAM_DATA static u8 sWorkbenchSpriteIds[CRAFT_SLOT_COUNT];
 EWRAM_DATA static u8 sCraftCursorPos = 0;
 EWRAM_DATA static u8 sCraftSlotSpriteIds[CRAFT_SLOT_COUNT];
@@ -54,6 +56,7 @@ static const u8 sText_CraftingUi_BButtonExit[] = _("{B_BUTTON} Exit");
 static const u8 sText_CraftingUi_StartButtonCraft[] = _("{START_BUTTON} Craft");
 static const u8 sText_CraftingUi_SelectButton[] = _("{SELECT_BUTTON}");
 static const u8 sText_CraftingUi_RecipeBook[] = _("Recipe\nBook");
+const u8 gText_PackUpQuestion[] = _("Would you like to pack up?");
 
 static const u8 sGridTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY};
 static const u8 sInputTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
@@ -92,6 +95,15 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
         .paletteNum = 15,
         .baseBlock = 145
     },
+    [WINDOW_CRAFT_YESNO] = {
+        .bg = 0,
+        .tilemapLeft = 23,
+        .tilemapTop = 9,
+        .width = 5,
+        .height = 4,
+        .paletteNum = 15,
+        .baseBlock = 300,
+    }
 };
 
 static const struct CompressedSpriteSheet sWorkbenchSheets[] =
@@ -329,6 +341,46 @@ void CraftMenuUI_SetCursorPos(u8 pos)
     else
         sCraftCursorPos = 0;
     CraftMenuUI_UpdateGrid();
+}
+
+void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
+{
+    if (sCraftInfoWindowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
+        RemoveWindow(sCraftInfoWindowId);
+        sCraftInfoWindowId = WINDOW_NONE;
+    }
+
+    sPackUpMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+    LoadMessageBoxAndBorderGfx();
+    StringExpandPlaceholders(gStringVar4, gText_PackUpQuestion);
+    DisplayMessageAndContinueTask(taskId, sPackUpMessageWindowId, DLG_WINDOW_BASE_TILE_NUM,
+                                  DLG_WINDOW_PALETTE_NUM, FONT_NORMAL, GetPlayerTextSpeedDelay(),
+                                  gStringVar4, nextTask);
+    CopyWindowToVram(sPackUpMessageWindowId, COPYWIN_FULL);
+}
+
+void CraftMenuUI_ShowPackUpYesNo(void)
+{
+    CreateYesNoMenu(&sCraftWindowTemplates[WINDOW_CRAFT_YESNO], STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 0);
+}
+
+void CraftMenuUI_ClearPackUpMessage(void)
+{
+    if (sPackUpMessageWindowId != WINDOW_NONE)
+    {
+        ClearDialogWindowAndFrame(sPackUpMessageWindowId, TRUE);
+        RemoveWindow(sPackUpMessageWindowId);
+        sPackUpMessageWindowId = WINDOW_NONE;
+    }
+
+    if (sCraftInfoWindowId == WINDOW_NONE)
+    {
+        sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+        ShowInfoWindow();
+        UpdateCraftInfoWindow();
+    }
 }
 
 
