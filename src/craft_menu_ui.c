@@ -353,7 +353,7 @@ static const struct WindowTemplate sPackUpYesNoWindowTemplate = {
     .baseBlock = 200,
 };
 
-EWRAM_DATA static u8 sPackUpMessageWindowId = WINDOW_NONE;
+static EWRAM_DATA u8 sPackUpMessageWindowId = 0;
 
 void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
 {
