@@ -104,7 +104,7 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
         .bg = 0,
         .tilemapLeft = 1,
         .tilemapTop = 3,
-        .width = 8,
+        .width = 6,
         .height = 4,
         .paletteNum = 15,
         .baseBlock = 120
@@ -197,13 +197,6 @@ static void ShowGridWindow(void)
     CopyWindowToVram(sCraftGridWindowId, COPYWIN_FULL);
 }
 
-static void ShowItemInfoWindow(void)
-{
-    DrawStdFrameWithCustomTileAndPalette(sCraftItemInfoWindowId, TRUE, 0x214, 14);
-    FillWindowPixelBuffer(sCraftItemInfoWindowId, PIXEL_FILL(1));
-    CopyWindowToVram(sCraftItemInfoWindowId, COPYWIN_FULL);
-}
-
 static void ShowInfoWindow(void)
 {
     DrawStdFrameWithCustomTileAndPalette(sCraftInfoWindowId, TRUE, 0x214, 14);
@@ -226,6 +219,9 @@ static void UpdateItemInfoWindow(void)
     FillWindowPixelBuffer(sCraftItemInfoWindowId, PIXEL_FILL(1));
     if (gCraftSlots[sCraftCursorPos].itemId != ITEM_NONE)
     {
+        PutWindowTilemap(sCraftItemInfoWindowId);
+        DrawStdFrameWithCustomTileAndPalette(sCraftItemInfoWindowId, TRUE, 0x214, 14);
+
         u8 name[ITEM_NAME_LENGTH];
         CopyItemName(gCraftSlots[sCraftCursorPos].itemId, name);
         AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NORMAL, 2, 1, sInputTextColor, 0, name);
@@ -233,6 +229,11 @@ static void UpdateItemInfoWindow(void)
         StringExpandPlaceholders(gStringVar4, gText_xVar1);
         AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NORMAL, 2, 13, sInputTextColor, 0, gStringVar4);
     }
+    else
+    {
+        ClearWindowTilemap(sCraftItemInfoWindowId);
+    }
+
     CopyWindowToVram(sCraftItemInfoWindowId, COPYWIN_FULL);
 }
 
@@ -354,7 +355,6 @@ void CraftMenuUI_Init(void)
 
     LoadCraftWindows();
     ShowGridWindow();
-    ShowItemInfoWindow();
     ShowInfoWindow();
     CreateWorkbenchSprite();
     CraftMenuUI_DrawIcons();
