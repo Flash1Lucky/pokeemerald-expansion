@@ -129,9 +129,8 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
     },
     [WINDOW_CRAFT_QUANTITY] = {
         .bg = 0,
-        .tilemapLeft = 24,
-        // Positioned above the info window so the two do not overlap
-        .tilemapTop = 13,
+        .tilemapLeft = 23,
+        .tilemapTop = 11,
         .width = 5,
         .height = 2,
         .paletteNum = 15,
