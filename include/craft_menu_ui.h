@@ -25,5 +25,8 @@ void CraftMenuUI_EndSwapMode(void);
 bool8 CraftMenuUI_InSwapMode(void);
 void CraftMenuUI_RedrawInfo(void);
 void CraftMenuUI_PrintInfo(const u8 *text, u8 x, u8 y);
+u8 CraftMenuUI_AddQuantityWindow(void);
+void CraftMenuUI_PrintQuantity(u16 quantity);
+void CraftMenuUI_RemoveQuantityWindow(void);
 
 #endif // GUARD_CRAFT_MENU_UI_H

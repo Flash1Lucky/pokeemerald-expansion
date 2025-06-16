@@ -42,6 +42,7 @@ enum
     WINDOW_CRAFT_INFO,
     WINDOW_CRAFT_YESNO,
     WINDOW_CRAFT_ACTIONS,
+    WINDOW_CRAFT_QUANTITY,
     NUM_CRAFT_WINDOWS
 };
 
@@ -52,6 +53,7 @@ EWRAM_DATA static u8 sWorkbenchSpriteIds[CRAFT_SLOT_COUNT];
 EWRAM_DATA static u8 sCraftCursorPos = 0;
 EWRAM_DATA static u8 sCraftSlotSpriteIds[CRAFT_SLOT_COUNT];
 EWRAM_DATA static u8 sActionMenuWindowId;
+EWRAM_DATA static u8 sQuantityWindowId;
 EWRAM_DATA static bool8 sInSwapMode = FALSE;
 
 static const u8 sText_CraftingUi_AButton[] = _("{A_BUTTON}");
@@ -123,6 +125,15 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
         .height = 11,
         .paletteNum = 15,
         .baseBlock = 340,
+    },
+    [WINDOW_CRAFT_QUANTITY] = {
+        .bg = 0,
+        .tilemapLeft = 24,
+        .tilemapTop = 17,
+        .width = 5,
+        .height = 2,
+        .paletteNum = 15,
+        .baseBlock = 410,
     }
 };
 
@@ -489,6 +500,44 @@ void CraftMenuUI_ClearPackUpMessage(void)
         sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
         ShowInfoWindow();
         UpdateCraftInfoWindow();
+    }
+}
+
+static void ShowQuantityWindow(void)
+{
+    DrawStdFrameWithCustomTileAndPalette(sQuantityWindowId, TRUE, 0x214, 14);
+    FillWindowPixelBuffer(sQuantityWindowId, PIXEL_FILL(1));
+    CopyWindowToVram(sQuantityWindowId, COPYWIN_FULL);
+}
+
+u8 CraftMenuUI_AddQuantityWindow(void)
+{
+    if (sQuantityWindowId == WINDOW_NONE)
+    {
+        sQuantityWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_QUANTITY]);
+        ShowQuantityWindow();
+    }
+    return sQuantityWindowId;
+}
+
+void CraftMenuUI_PrintQuantity(u16 quantity)
+{
+    if (sQuantityWindowId != WINDOW_NONE)
+    {
+        ConvertIntToDecimalStringN(gStringVar1, quantity, STR_CONV_MODE_LEADING_ZEROS, 3);
+        StringExpandPlaceholders(gStringVar4, gText_xVar1);
+        AddTextPrinterParameterized(sQuantityWindowId, FONT_NORMAL, gStringVar4,
+                                   GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0x28), 2, 0, 0);
+    }
+}
+
+void CraftMenuUI_RemoveQuantityWindow(void)
+{
+    if (sQuantityWindowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrameToTransparent(sQuantityWindowId, TRUE);
+        RemoveWindow(sQuantityWindowId);
+        sQuantityWindowId = WINDOW_NONE;
     }
 }
 
