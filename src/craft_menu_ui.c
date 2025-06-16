@@ -232,20 +232,23 @@ static void UpdateCraftInfoWindow(void)
 
 static void UpdateItemInfoWindow(void)
 {
-    if (gCraftSlots[sCraftCursorPos / CRAFT_COLS][sCraftCursorPos % CRAFT_COLS].itemId != ITEM_NONE)
+    int row = sCraftCursorPos / CRAFT_COLS;
+    int col = sCraftCursorPos % CRAFT_COLS;
+
+    if (gCraftSlots[row][col].itemId != ITEM_NONE)
     {
         FillWindowPixelBuffer(sCraftItemInfoWindowId, PIXEL_FILL(1));
         PutWindowTilemap(sCraftItemInfoWindowId);
         DrawStdFrameWithCustomTileAndPalette(sCraftItemInfoWindowId, TRUE, 0x214, 14);
 
         u8 name[ITEM_NAME_LENGTH];
-        CopyItemName(gCraftSlots[sCraftCursorPos / CRAFT_COLS][sCraftCursorPos % CRAFT_COLS].itemId, name);
+        CopyItemName(gCraftSlots[row][col].itemId, name);
         u32 width = WindowWidthPx(sCraftItemInfoWindowId) - 16;
         u8 fontId = GetFontIdToFit(name, FONT_NORMAL, 0, width);
         BreakStringAutomatic(name, width, 0, fontId, HIDE_SCROLL_PROMPT);
         AddTextPrinterParameterized4(sCraftItemInfoWindowId, fontId, 2, 1, 0, 0, sInputTextColor, 0, name);
         //AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NARROWER, 2, 1, sInputTextColor, 0, name);
-        ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[sCraftCursorPos / CRAFT_COLS][sCraftCursorPos % CRAFT_COLS].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
+        ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[row][col].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
         StringExpandPlaceholders(gStringVar4, gText_xVar1);
         AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NORMAL, 2, 45, sInputTextColor, 0, gStringVar4);
         CopyWindowToVram(sCraftItemInfoWindowId, COPYWIN_FULL);
@@ -318,44 +321,47 @@ static void DestroyCraftIconSprite(u8 slot)
 
 void CraftMenuUI_DrawIcons(void)
 {
-    int i;
+    int row, col, index, i;
     u8 oldSpriteIds[CRAFT_SLOT_COUNT];
     u16 oldTags[CRAFT_SLOT_COUNT];
 
-    for (i = 0; i < CRAFT_SLOT_COUNT; i++)
+    for (row = 0, index = 0; row < CRAFT_ROWS; row++)
     {
-        oldSpriteIds[i] = SPRITE_NONE;
-        if (gCraftSlots[i / CRAFT_COLS][i % CRAFT_COLS].itemId != sCraftSlotItemIds[i])
+        for (col = 0; col < CRAFT_COLS; col++, index++)
         {
-            bool8 oldFlip = sCraftSlotTagFlip[i];
-            u16 newTag = GetCraftIconTag(i, !oldFlip);
-            u8 spriteId = SPRITE_NONE;
-
-            if (gCraftSlots[i / CRAFT_COLS][i % CRAFT_COLS].itemId != ITEM_NONE)
+            oldSpriteIds[index] = SPRITE_NONE;
+            if (gCraftSlots[row][col].itemId != sCraftSlotItemIds[index])
             {
-                spriteId = AddItemIconSprite(newTag, newTag, gCraftSlots[i / CRAFT_COLS][i % CRAFT_COLS].itemId);
-                if (spriteId != MAX_SPRITES)
-                {
-                    gSprites[spriteId].x = sWorkbenchSlotPositions[i].x + 79;
-                    gSprites[spriteId].y = sWorkbenchSlotPositions[i].y + 28;
-                    gSprites[spriteId].oam.priority = 0;
-                }
-                else
-                {
-                    spriteId = SPRITE_NONE;
-                }
-            }
+                bool8 oldFlip = sCraftSlotTagFlip[index];
+                u16 newTag = GetCraftIconTag(index, !oldFlip);
+                u8 spriteId = SPRITE_NONE;
 
-            if (sCraftSlotSpriteIds[i] != SPRITE_NONE)
-            {
-                gSprites[sCraftSlotSpriteIds[i]].invisible = TRUE;
-                oldSpriteIds[i] = sCraftSlotSpriteIds[i];
-                oldTags[i] = GetCraftIconTag(i, oldFlip);
-            }
+                if (gCraftSlots[row][col].itemId != ITEM_NONE)
+                {
+                    spriteId = AddItemIconSprite(newTag, newTag, gCraftSlots[row][col].itemId);
+                    if (spriteId != MAX_SPRITES)
+                    {
+                        gSprites[spriteId].x = sWorkbenchSlotPositions[index].x + 79;
+                        gSprites[spriteId].y = sWorkbenchSlotPositions[index].y + 28;
+                        gSprites[spriteId].oam.priority = 0;
+                    }
+                    else
+                    {
+                        spriteId = SPRITE_NONE;
+                    }
+                }
 
-            sCraftSlotSpriteIds[i] = spriteId;
-            sCraftSlotItemIds[i] = gCraftSlots[i / CRAFT_COLS][i % CRAFT_COLS].itemId;
-            sCraftSlotTagFlip[i] = !oldFlip;
+                if (sCraftSlotSpriteIds[index] != SPRITE_NONE)
+                {
+                    gSprites[sCraftSlotSpriteIds[index]].invisible = TRUE;
+                    oldSpriteIds[index] = sCraftSlotSpriteIds[index];
+                    oldTags[index] = GetCraftIconTag(index, oldFlip);
+                }
+
+                sCraftSlotSpriteIds[index] = spriteId;
+                sCraftSlotItemIds[index] = gCraftSlots[row][col].itemId;
+                sCraftSlotTagFlip[index] = !oldFlip;
+            }
         }
     }
 

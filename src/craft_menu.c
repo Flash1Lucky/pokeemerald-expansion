@@ -143,16 +143,20 @@ static bool8 HandleCraftMenuInput(void)
     if (JOY_NEW(A_BUTTON))
     {
         PlaySE(SE_SELECT);
-        if (gCraftSlots[CraftMenuUI_GetCursorPos() / CRAFT_COLS][CraftMenuUI_GetCursorPos() % CRAFT_COLS].itemId != ITEM_NONE)
         {
-            CraftMenuUI_ShowActionMenu();
-            gMenuCallback = HandleSlotActionInput;
-            return FALSE;
-        }
-        else
-        {
-            OpenBagFromCraftMenu();
-            return TRUE;
+            int row = CraftMenuUI_GetCursorPos() / CRAFT_COLS;
+            int col = CraftMenuUI_GetCursorPos() % CRAFT_COLS;
+            if (gCraftSlots[row][col].itemId != ITEM_NONE)
+            {
+                CraftMenuUI_ShowActionMenu();
+                gMenuCallback = HandleSlotActionInput;
+                return FALSE;
+            }
+            else
+            {
+                OpenBagFromCraftMenu();
+                return TRUE;
+            }
         }
     }
 
@@ -329,8 +333,12 @@ static void Task_AdjustQuantity(u8 taskId)
     switch (gTasks[taskId].data[0])
     {
     case 0:
-        sItemId = gCraftSlots[CraftMenuUI_GetCursorPos() / CRAFT_COLS][CraftMenuUI_GetCursorPos() % CRAFT_COLS].itemId;
-        sOldQty = gCraftSlots[CraftMenuUI_GetCursorPos() / CRAFT_COLS][CraftMenuUI_GetCursorPos() % CRAFT_COLS].quantity;
+        {
+            int row = CraftMenuUI_GetCursorPos() / CRAFT_COLS;
+            int col = CraftMenuUI_GetCursorPos() % CRAFT_COLS;
+            sItemId = gCraftSlots[row][col].itemId;
+            sOldQty = gCraftSlots[row][col].quantity;
+        }
         sMaxQty = sOldQty + CountTotalItemQuantityInBag(sItemId);
         gTasks[taskId].data[1] = sOldQty;
         gMenuCallback = NULL;
@@ -350,11 +358,13 @@ static void Task_AdjustQuantity(u8 taskId)
         if (JOY_NEW(A_BUTTON))
         {
             u16 newQty = gTasks[taskId].data[1];
+            int row = CraftMenuUI_GetCursorPos() / CRAFT_COLS;
+            int col = CraftMenuUI_GetCursorPos() % CRAFT_COLS;
             if (newQty > sOldQty)
                 RemoveBagItem(sItemId, newQty - sOldQty);
             else if (newQty < sOldQty)
                 AddBagItem(sItemId, sOldQty - newQty);
-            gCraftSlots[CraftMenuUI_GetCursorPos() / CRAFT_COLS][CraftMenuUI_GetCursorPos() % CRAFT_COLS].quantity = newQty;
+            gCraftSlots[row][col].quantity = newQty;
             CraftMenuUI_DrawIcons();
             gTasks[taskId].data[0] = 2;
         }
