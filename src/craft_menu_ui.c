@@ -10,6 +10,7 @@
 #include "main.h"
 #include "sprite.h"
 #include "decompress.h"
+#include "sound.h"
 #include "strings.h"
 #include "string_util.h"
 #include "item_icon.h"
@@ -40,6 +41,7 @@ enum
     WINDOW_CRAFT_GRID,
     WINDOW_CRAFT_INFO,
     WINDOW_CRAFT_YESNO,
+    WINDOW_CRAFT_ACTIONS,
     NUM_CRAFT_WINDOWS
 };
 
@@ -49,6 +51,8 @@ EWRAM_DATA static u8 sPackUpMessageWindowId = 0;
 EWRAM_DATA static u8 sWorkbenchSpriteIds[CRAFT_SLOT_COUNT];
 EWRAM_DATA static u8 sCraftCursorPos = 0;
 EWRAM_DATA static u8 sCraftSlotSpriteIds[CRAFT_SLOT_COUNT];
+EWRAM_DATA static u8 sActionMenuWindowId;
+EWRAM_DATA static bool8 sInSwapMode = FALSE;
 
 static const u8 sText_CraftingUi_AButton[] = _("{A_BUTTON}");
 static const u8 sText_CraftingUi_AddItem[] = _("Add\nItem");
@@ -56,11 +60,18 @@ static const u8 sText_CraftingUi_BButtonExit[] = _("{B_BUTTON} Exit");
 static const u8 sText_CraftingUi_StartButtonCraft[] = _("{START_BUTTON} Craft");
 static const u8 sText_CraftingUi_SelectButton[] = _("{SELECT_BUTTON}");
 static const u8 sText_CraftingUi_RecipeBook[] = _("Recipe\nBook");
+
+const u8 gText_CraftSwapItem[] = _("Swap Item");
+const u8 gText_CraftAdjustQty[] = _("Adjust Qty");
+const u8 gText_CraftSwapSlot[] = _("Swap Slot");
+const u8 gText_CraftPackItem[] = _("Pack Item");
+
 const u8 gText_PackUpQuestion[] = _("Would you like to pack up?");
 
 static const u8 sGridTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY};
 static const u8 sInputTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
 static const u8 sHintTextColor[] = {TEXT_COLOR_WHITE, TEXT_COLOR_GREEN, TEXT_COLOR_LIGHT_GREEN};
+static const u8 sSwapTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED};
 
 struct GridSlotPos
 {
@@ -103,6 +114,15 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
         .height = 4,
         .paletteNum = 15,
         .baseBlock = 300,
+    },
+    [WINDOW_CRAFT_ACTIONS] = {
+        .bg = 0,
+        .tilemapLeft = 22,
+        .tilemapTop = 2,
+        .width = 6,
+        .height = 11,
+        .paletteNum = 15,
+        .baseBlock = 340,
     }
 };
 
@@ -259,7 +279,8 @@ void CraftMenuUI_UpdateGrid(void)
         const struct GridSlotPos *pos = &sWorkbenchSlotPositions[i];
         if (i == sCraftCursorPos)
         {
-            AddTextPrinterParameterized3(sCraftGridWindowId, FONT_NORMAL, pos->x - 14, pos->y, sGridTextColor, 0, gText_SelectorArrow2);
+            const u8 *color = sInSwapMode ? sSwapTextColor : sGridTextColor;
+            AddTextPrinterParameterized3(sCraftGridWindowId, FONT_NORMAL, pos->x - 14, pos->y, color, 0, gText_SelectorArrow2);
         }
     }
     CopyWindowToVram(sCraftGridWindowId, COPYWIN_FULL);
@@ -290,6 +311,8 @@ void CraftMenuUI_Init(void)
         sCraftSlotSpriteIds[i] = SPRITE_NONE;
     }
     sCraftCursorPos = 0;
+    sActionMenuWindowId = WINDOW_NONE;
+    sInSwapMode = FALSE;
 
     LoadCraftWindows();
     ShowGridWindow();
@@ -316,6 +339,7 @@ void CraftMenuUI_Close(void)
         RemoveWindow(sCraftInfoWindowId);
         sCraftInfoWindowId = WINDOW_NONE;
     }
+    CraftMenuUI_HideActionMenu();
 
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
     {
@@ -341,6 +365,91 @@ void CraftMenuUI_SetCursorPos(u8 pos)
     else
         sCraftCursorPos = 0;
     CraftMenuUI_UpdateGrid();
+}
+
+void CraftMenuUI_ShowActionMenu(void)
+{
+    if (sActionMenuWindowId == WINDOW_NONE)
+    {
+        sActionMenuWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_ACTIONS]);
+        DrawStdFrameWithCustomTileAndPalette(sActionMenuWindowId, TRUE, 0x214, 14);
+        FillWindowPixelBuffer(sActionMenuWindowId, PIXEL_FILL(1));
+        static const struct MenuAction actions[] = {
+            {gText_CraftSwapItem, {NULL}},
+            {gText_CraftAdjustQty, {NULL}},
+            {gText_CraftSwapSlot, {NULL}},
+            {gText_CraftPackItem, {NULL}},
+            {gText_Cancel2, {NULL}},
+        };
+        static const u8 ids[] = {0,1,2,3,4};
+        PrintMenuActionTexts(sActionMenuWindowId, FONT_SHORT_NARROWER, 8, 1, 0, 16, ARRAY_COUNT(actions), actions, ids);
+        InitMenuInUpperLeftCornerNormal(sActionMenuWindowId, ARRAY_COUNT(actions), 0);
+        CopyWindowToVram(sActionMenuWindowId, COPYWIN_FULL);
+    }
+}
+
+void CraftMenuUI_HideActionMenu(void)
+{
+    if (sActionMenuWindowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrameToTransparent(sActionMenuWindowId, TRUE);
+        RemoveWindow(sActionMenuWindowId);
+        sActionMenuWindowId = WINDOW_NONE;
+    }
+}
+
+s8 CraftMenuUI_ProcessActionMenuInput(void)
+{
+    s8 selection = Menu_ProcessInputNoWrap();
+    if (selection != MENU_NOTHING_CHOSEN)
+        PlaySE(SE_SELECT);
+    if (selection == MENU_B_PRESSED)
+        return 4; // cancel
+    return selection;
+}
+
+void CraftMenuUI_StartSwapMode(void)
+{
+    sInSwapMode = TRUE;
+    CraftMenuUI_UpdateGrid();
+}
+
+void CraftMenuUI_EndSwapMode(void)
+{
+    sInSwapMode = FALSE;
+    CraftMenuUI_UpdateGrid();
+}
+
+bool8 CraftMenuUI_InSwapMode(void)
+{
+    return sInSwapMode;
+}
+
+void CraftMenuUI_RedrawInfo(void)
+{
+    if (sCraftInfoWindowId == WINDOW_NONE)
+    {
+        sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+        ShowInfoWindow();
+    }
+    else
+    {
+        FillWindowPixelBuffer(sCraftInfoWindowId, PIXEL_FILL(1));
+    }
+    UpdateCraftInfoWindow();
+    CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
+}
+
+void CraftMenuUI_PrintInfo(const u8 *text, u8 x, u8 y)
+{
+    if (sCraftInfoWindowId == WINDOW_NONE)
+    {
+        sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+        ShowInfoWindow();
+    }
+    FillWindowPixelBuffer(sCraftInfoWindowId, PIXEL_FILL(1));
+    AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, x, y, sInputTextColor, 0, text);
+    CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
 }
 
 void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)

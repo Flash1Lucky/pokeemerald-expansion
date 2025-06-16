@@ -16,4 +16,14 @@ void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask);
 void CraftMenuUI_ShowPackUpYesNo(void);
 void CraftMenuUI_ClearPackUpMessage(void);
 
+// Additional UI features
+void CraftMenuUI_ShowActionMenu(void);
+void CraftMenuUI_HideActionMenu(void);
+s8 CraftMenuUI_ProcessActionMenuInput(void);
+void CraftMenuUI_StartSwapMode(void);
+void CraftMenuUI_EndSwapMode(void);
+bool8 CraftMenuUI_InSwapMode(void);
+void CraftMenuUI_RedrawInfo(void);
+void CraftMenuUI_PrintInfo(const u8 *text, u8 x, u8 y);
+
 #endif // GUARD_CRAFT_MENU_UI_H
