@@ -2930,6 +2930,7 @@ static const struct SpriteTemplate sSpriteTemplate_MoveInfoWindow =
     .anims = gDummySpriteAnimTable,
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
+#if B_FALSE_SWIPE_TOGGLE
 static const struct OamData sOamData_DontKoWindow =
 };
 
@@ -2937,14 +2938,19 @@ static const struct SpriteTemplate sSpriteTemplate_DontKoWindow =
 {
     .tileTag = DONT_KO_WINDOW_TAG,
     .oam = &sOamData_DontKoWindow,
+#endif // B_FALSE_SWIPE_TOGGLE
+#if B_FALSE_SWIPE_TOGGLE
 static const u8 sDontKoWindowGfx[] = INCBIN_U8("graphics/battle_interface/move_info_window_r.4bpp");
 static const struct SpriteSheet sSpriteSheet_DontKoWindow =
     sDontKoWindowGfx, sizeof(sDontKoWindowGfx), DONT_KO_WINDOW_TAG
+#endif // B_FALSE_SWIPE_TOGGLE
+#if B_FALSE_SWIPE_TOGGLE
 static u8 *AddTextPrinterAndCreateDontKoWindow(const u8 *str, u32 x, u32 y, u32 color1, u32 color2, u32 color3, u32 *windowId)
 static void TextIntoDontKoWindow(void *dest, u8 *windowTileData)
 void PrintOnDontKoWindow(bool32 active)
     windowTileData = AddTextPrinterAndCreateDontKoWindow(
     TextIntoDontKoWindow((void *)(OBJ_VRAM0 + gSprites[gBattleStruct->falseSwipeSpriteId].oam.tileNum * 32), windowTileData);
+#endif // B_FALSE_SWIPE_TOGGLE
     .priority = 1,
     .paletteNum = 0,
     .affineParam = 0,
@@ -3135,8 +3141,9 @@ void TryAddLastUsedBallItemSprites(void)
 
     // window
     LoadSpritePalette(&sSpritePalette_AbilityPopUp);
+#if B_FALSE_SWIPE_TOGGLE
 void TryToAddDontKoWindow(void)
-    if (GetSpriteTileStartByTag(DONT_KO_WINDOW_TAG) == 0xFFFF)
+    if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
         LoadSpriteSheet(&sSpriteSheet_DontKoWindow);
         gBattleStruct->falseSwipeSpriteId = CreateSprite(&sSpriteTemplate_DontKoWindow, LAST_BALL_WIN_X_0, LAST_USED_WIN_Y, 6);
     PrintOnDontKoWindow(gBattleStruct->falseSwipeActive);
@@ -3245,6 +3252,10 @@ static void SpriteCB_LastUsedBallWin(struct Sprite *sprite)
     }
 }
 
+#else
+void TryToAddDontKoWindow(void) {}
+void TryToHideDontKoWindow(void) {}
+#endif // B_FALSE_SWIPE_TOGGLE
 static void SpriteCB_LastUsedBall(struct Sprite *sprite)
 {
     if (sprite->sHide)
