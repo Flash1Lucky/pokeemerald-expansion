@@ -113,7 +113,7 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
         .bg = 0,
         .tilemapLeft = 21,
         .tilemapTop = 3,
-        .width = 9,
+        .width = 8, // slightly narrower
         .height = 10,
         .paletteNum = 15,
         .baseBlock = 340,
@@ -376,7 +376,7 @@ void CraftMenuUI_ShowActionMenu(void)
             {gText_Cancel2, {NULL}},
         };
         static const u8 ids[] = {0,1,2,3,4};
-        PrintMenuActionTexts(sActionMenuWindowId, FONT_NORMAL, 1, 1, 0, 16, ARRAY_COUNT(actions), actions, ids);
+        PrintMenuActionTexts(sActionMenuWindowId, FONT_SMALL_NARROWER, 1, 1, 0, 16, ARRAY_COUNT(actions), actions, ids);
         InitMenuInUpperLeftCornerNormal(sActionMenuWindowId, ARRAY_COUNT(actions), 0);
         CopyWindowToVram(sActionMenuWindowId, COPYWIN_FULL);
     }
