@@ -232,20 +232,20 @@ static void UpdateCraftInfoWindow(void)
 
 static void UpdateItemInfoWindow(void)
 {
-    if (gCraftSlots[sCraftCursorPos].itemId != ITEM_NONE)
+    if (gCraftSlots[sCraftCursorPos / CRAFT_COLS][sCraftCursorPos % CRAFT_COLS].itemId != ITEM_NONE)
     {
         FillWindowPixelBuffer(sCraftItemInfoWindowId, PIXEL_FILL(1));
         PutWindowTilemap(sCraftItemInfoWindowId);
         DrawStdFrameWithCustomTileAndPalette(sCraftItemInfoWindowId, TRUE, 0x214, 14);
 
         u8 name[ITEM_NAME_LENGTH];
-        CopyItemName(gCraftSlots[sCraftCursorPos].itemId, name);
+        CopyItemName(gCraftSlots[sCraftCursorPos / CRAFT_COLS][sCraftCursorPos % CRAFT_COLS].itemId, name);
         u32 width = WindowWidthPx(sCraftItemInfoWindowId) - 16;
         u8 fontId = GetFontIdToFit(name, FONT_NORMAL, 0, width);
         BreakStringAutomatic(name, width, 0, fontId, HIDE_SCROLL_PROMPT);
         AddTextPrinterParameterized4(sCraftItemInfoWindowId, fontId, 2, 1, 0, 0, sInputTextColor, 0, name);
         //AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NARROWER, 2, 1, sInputTextColor, 0, name);
-        ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[sCraftCursorPos].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
+        ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[sCraftCursorPos / CRAFT_COLS][sCraftCursorPos % CRAFT_COLS].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
         StringExpandPlaceholders(gStringVar4, gText_xVar1);
         AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NORMAL, 2, 45, sInputTextColor, 0, gStringVar4);
         CopyWindowToVram(sCraftItemInfoWindowId, COPYWIN_FULL);
@@ -325,15 +325,15 @@ void CraftMenuUI_DrawIcons(void)
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
     {
         oldSpriteIds[i] = SPRITE_NONE;
-        if (gCraftSlots[i].itemId != sCraftSlotItemIds[i])
+        if (gCraftSlots[i / CRAFT_COLS][i % CRAFT_COLS].itemId != sCraftSlotItemIds[i])
         {
             bool8 oldFlip = sCraftSlotTagFlip[i];
             u16 newTag = GetCraftIconTag(i, !oldFlip);
             u8 spriteId = SPRITE_NONE;
 
-            if (gCraftSlots[i].itemId != ITEM_NONE)
+            if (gCraftSlots[i / CRAFT_COLS][i % CRAFT_COLS].itemId != ITEM_NONE)
             {
-                spriteId = AddItemIconSprite(newTag, newTag, gCraftSlots[i].itemId);
+                spriteId = AddItemIconSprite(newTag, newTag, gCraftSlots[i / CRAFT_COLS][i % CRAFT_COLS].itemId);
                 if (spriteId != MAX_SPRITES)
                 {
                     gSprites[spriteId].x = sWorkbenchSlotPositions[i].x + 79;
@@ -354,7 +354,7 @@ void CraftMenuUI_DrawIcons(void)
             }
 
             sCraftSlotSpriteIds[i] = spriteId;
-            sCraftSlotItemIds[i] = gCraftSlots[i].itemId;
+            sCraftSlotItemIds[i] = gCraftSlots[i / CRAFT_COLS][i % CRAFT_COLS].itemId;
             sCraftSlotTagFlip[i] = !oldFlip;
         }
     }
