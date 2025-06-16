@@ -579,6 +579,23 @@ void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
     CopyWindowToVram(sPackUpMessageWindowId, COPYWIN_FULL);
 }
 
+void CraftMenuUI_DisplayMessage(const u8 *text, u8 taskId, TaskFunc nextTask)
+{
+    if (sCraftInfoWindowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
+        RemoveWindow(sCraftInfoWindowId);
+        sCraftInfoWindowId = WINDOW_NONE;
+    }
+
+    sPackUpMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+    LoadMessageBoxAndBorderGfx();
+    DisplayMessageAndContinueTask(taskId, sPackUpMessageWindowId, DLG_WINDOW_BASE_TILE_NUM,
+                                  DLG_WINDOW_PALETTE_NUM, FONT_NORMAL, GetPlayerTextSpeedDelay(),
+                                  text, nextTask);
+    CopyWindowToVram(sPackUpMessageWindowId, COPYWIN_FULL);
+}
+
 void CraftMenuUI_ShowPackUpYesNo(void)
 {
     CreateYesNoMenu(&sCraftWindowTemplates[WINDOW_CRAFT_YESNO], STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 0);

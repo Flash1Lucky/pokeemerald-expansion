@@ -37,6 +37,8 @@ static void PackUpNo(u8 taskId);
 static bool8 CraftMenu_HasItemsOnTable(void);
 static void Task_AdjustQuantity(u8 taskId);
 static void CraftMenu_ReshowAfterBagMenu(void);
+static void Task_DoCraft(u8 taskId);
+static void Task_CraftMessageClear(u8 taskId);
 void CB2_ReturnToCraftMenu(void);
 
 static const u8 sText_CraftPlaceHowManyVar1[] = _("Place how many {STR_VAR_1}?");
@@ -165,6 +167,14 @@ static bool8 HandleCraftMenuInput(void)
         return TRUE;
     }
 #endif
+
+    if (JOY_NEW(START_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        gMenuCallback = NULL;
+        CreateTask(Task_DoCraft, 0);
+        return FALSE;
+    }
 
     if (CraftMenuUI_HandleDpadInput())
     {
@@ -391,4 +401,31 @@ static void CraftMenu_ReshowAfterBagMenu(void)
     sKeepSlots = TRUE;
     StartCraftMenu();
     FadeInFromBlack();
+}
+
+static void Task_CraftMessageClear(u8 taskId)
+{
+    CraftMenuUI_ClearPackUpMessage();
+    gMenuCallback = HandleCraftMenuInput;
+    DestroyTask(taskId);
+}
+
+static void Task_DoCraft(u8 taskId)
+{
+    const struct CraftRecipe *recipe = CraftLogic_FindMatchingRecipe();
+
+    if (recipe != NULL)
+    {
+        CraftLogic_ConsumeRecipe(recipe);
+        AddBagItem(recipe->result, recipe->resultQuantity);
+        CraftMenuUI_DrawIcons();
+
+        CopyItemNameHandlePlural(recipe->result, gStringVar1, recipe->resultQuantity);
+        StringExpandPlaceholders(gStringVar4, gText_CraftedItemVar1);
+        CraftMenuUI_DisplayMessage(gStringVar4, taskId, Task_CraftMessageClear);
+    }
+    else
+    {
+        CraftMenuUI_DisplayMessage(gText_CraftNoRecipe, taskId, Task_CraftMessageClear);
+    }
 }

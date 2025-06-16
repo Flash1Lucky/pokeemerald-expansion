@@ -1589,6 +1589,8 @@ extern const u8 gText_EnjoyCycling[];
 extern const u8 gText_InUseAlready_PM[];
 extern const u8 gText_CantUseHere[];
 extern const u8 gText_CantCraftWithItem[];
+extern const u8 gText_CraftNoRecipe[];
+extern const u8 gText_CraftedItemVar1[];
 extern const u8 gText_NoPokemonForBattle[];
 extern const u8 gText_ChoosePokemon2[];
 extern const u8 gText_NotEnoughHp[];

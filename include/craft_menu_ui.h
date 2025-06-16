@@ -15,6 +15,7 @@ void CraftMenuUI_SetCursorPos(u8 pos);
 void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask);
 void CraftMenuUI_ShowPackUpYesNo(void);
 void CraftMenuUI_ClearPackUpMessage(void);
+void CraftMenuUI_DisplayMessage(const u8 *text, u8 taskId, TaskFunc nextTask);
 
 // Additional UI features
 void CraftMenuUI_ShowActionMenu(void);
