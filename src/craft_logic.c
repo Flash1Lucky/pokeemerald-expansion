@@ -23,3 +23,13 @@ void CraftLogic_SetSlot(u8 slot, u16 itemId, u16 quantity)
     gCraftSlots[slot].itemId = itemId;
     gCraftSlots[slot].quantity = quantity;
 }
+
+void CraftLogic_SwapSlots(u8 slotA, u8 slotB)
+{
+    if (slotA >= CRAFT_SLOT_COUNT || slotB >= CRAFT_SLOT_COUNT || slotA == slotB)
+        return;
+
+    struct ItemSlot temp = gCraftSlots[slotA];
+    gCraftSlots[slotA] = gCraftSlots[slotB];
+    gCraftSlots[slotB] = temp;
+}

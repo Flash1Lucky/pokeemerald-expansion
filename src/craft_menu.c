@@ -18,6 +18,7 @@
 #include "craft_debug.h"
 #include "config/crafting.h"
 #include "field_screen_effect.h"
+#include "string_util.h"
 #include "field_weather.h"
 #include "palette.h"
 #include "overworld.h"
@@ -26,14 +27,19 @@ static void Task_EnterCraftMenu(u8 taskId);
 static void Task_RunCraftMenu(u8 taskId);
 static void InitCraftMenu(void);
 static bool8 HandleCraftMenuInput(void);
+static bool8 HandleSlotActionInput(void);
+static bool8 HandleSwapSlotInput(void);
 static void CloseCraftMenu(void);
 static void Task_PackUpAsk(u8 taskId);
 static void Task_ShowPackUpYesNo(u8 taskId);
 static void PackUpYes(u8 taskId);
 static void PackUpNo(u8 taskId);
 static bool8 CraftMenu_HasItemsOnTable(void);
+static void Task_AdjustQuantity(u8 taskId);
 static void CraftMenu_ReshowAfterBagMenu(void);
 void CB2_ReturnToCraftMenu(void);
+
+static const u8 sText_CraftPlaceHowManyVar1[] = _("Place how many {STR_VAR_1}?");
 
 void StartCraftMenu(void)
 {
@@ -58,6 +64,16 @@ static void Task_RunCraftMenu(u8 taskId)
 }
 
 static bool8 sKeepSlots = FALSE;
+
+enum {
+    SLOT_ACTION_SWAP_ITEM,
+    SLOT_ACTION_ADJUST_QTY,
+    SLOT_ACTION_SWAP_SLOT,
+    SLOT_ACTION_REMOVE_ITEM,
+    SLOT_ACTION_CANCEL,
+};
+
+static u8 sSwapFromSlot = 0;
 
 static void InitCraftMenu(void)
 {
@@ -127,8 +143,17 @@ static bool8 HandleCraftMenuInput(void)
     if (JOY_NEW(A_BUTTON))
     {
         PlaySE(SE_SELECT);
-        OpenBagFromCraftMenu();
-        return TRUE;
+        if (gCraftSlots[CraftMenuUI_GetCursorPos()].itemId != ITEM_NONE)
+        {
+            CraftMenuUI_ShowActionMenu();
+            gMenuCallback = HandleSlotActionInput;
+            return FALSE;
+        }
+        else
+        {
+            OpenBagFromCraftMenu();
+            return TRUE;
+        }
     }
 
 #if DEBUG_CRAFT_MENU
@@ -198,6 +223,145 @@ static void PackUpNo(u8 taskId)
     CraftMenuUI_ClearPackUpMessage();
     gMenuCallback = HandleCraftMenuInput;
     DestroyTask(taskId);
+}
+
+static void Action_SwapItem(void)
+{
+    OpenBagFromCraftMenu();
+}
+
+static void Action_RemoveItem(void)
+{
+    u8 slot = CraftMenuUI_GetCursorPos();
+    AddBagItem(gCraftSlots[slot].itemId, gCraftSlots[slot].quantity);
+    gCraftSlots[slot].itemId = ITEM_NONE;
+    gCraftSlots[slot].quantity = 0;
+    CraftMenuUI_DrawIcons();
+}
+
+static void Action_StartSwapSlot(void)
+{
+    sSwapFromSlot = CraftMenuUI_GetCursorPos();
+    CraftMenuUI_StartSwapMode();
+    gMenuCallback = HandleSwapSlotInput;
+}
+
+static void Action_AdjustQuantity(void)
+{
+    CreateTask(Task_AdjustQuantity, 0);
+}
+
+static bool8 HandleSlotActionInput(void)
+{
+    s8 selection = CraftMenuUI_ProcessActionMenuInput();
+    if (selection == MENU_NOTHING_CHOSEN)
+        return FALSE;
+
+    CraftMenuUI_HideActionMenu();
+    switch (selection)
+    {
+    case SLOT_ACTION_SWAP_ITEM:
+        Action_SwapItem();
+        return TRUE;
+    case SLOT_ACTION_ADJUST_QTY:
+        Action_AdjustQuantity();
+        gMenuCallback = NULL;
+        return FALSE;
+    case SLOT_ACTION_SWAP_SLOT:
+        Action_StartSwapSlot();
+        return FALSE;
+    case SLOT_ACTION_REMOVE_ITEM:
+        Action_RemoveItem();
+        break;
+    case SLOT_ACTION_CANCEL:
+    default:
+        break;
+    }
+
+    gMenuCallback = HandleCraftMenuInput;
+    return FALSE;
+}
+
+static bool8 HandleSwapSlotInput(void)
+{
+    if (CraftMenuUI_HandleDpadInput())
+    {
+        PlaySE(SE_SELECT);
+        CraftMenuUI_UpdateGrid();
+    }
+
+    if (JOY_NEW(B_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        CraftMenuUI_EndSwapMode();
+        CraftMenuUI_SetCursorPos(sSwapFromSlot);
+        gMenuCallback = HandleCraftMenuInput;
+        return FALSE;
+    }
+
+    if (JOY_NEW(A_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        u8 to = CraftMenuUI_GetCursorPos();
+        if (to != sSwapFromSlot)
+            CraftLogic_SwapSlots(sSwapFromSlot, to);
+        CraftMenuUI_EndSwapMode();
+        CraftMenuUI_DrawIcons();
+        gMenuCallback = HandleCraftMenuInput;
+    }
+
+    return FALSE;
+}
+
+static void Task_AdjustQuantity(u8 taskId)
+{
+    static u16 sOldQty;
+    static u16 sMaxQty;
+    static u16 sItemId;
+    switch (gTasks[taskId].data[0])
+    {
+    case 0:
+        sItemId = gCraftSlots[CraftMenuUI_GetCursorPos()].itemId;
+        sOldQty = gCraftSlots[CraftMenuUI_GetCursorPos()].quantity;
+        sMaxQty = sOldQty + CountTotalItemQuantityInBag(sItemId);
+        gTasks[taskId].data[1] = sOldQty;
+        gMenuCallback = NULL;
+        CopyItemNameHandlePlural(sItemId, gStringVar1, 2);
+        StringExpandPlaceholders(gStringVar4, sText_CraftPlaceHowManyVar1);
+        CraftMenuUI_PrintInfo(gStringVar4, 2, 7);
+        CraftMenuUI_AddQuantityWindow();
+        CraftMenuUI_PrintQuantity(sOldQty);
+        gTasks[taskId].data[0] = 1;
+        break;
+    case 1:
+        if (AdjustQuantityAccordingToDPadInput(&gTasks[taskId].data[1], sMaxQty))
+        {
+            CraftMenuUI_PrintQuantity(gTasks[taskId].data[1]);
+        }
+
+        if (JOY_NEW(A_BUTTON))
+        {
+            u16 newQty = gTasks[taskId].data[1];
+            if (newQty > sOldQty)
+                RemoveBagItem(sItemId, newQty - sOldQty);
+            else if (newQty < sOldQty)
+                AddBagItem(sItemId, sOldQty - newQty);
+            gCraftSlots[CraftMenuUI_GetCursorPos()].quantity = newQty;
+            CraftMenuUI_DrawIcons();
+            gTasks[taskId].data[0] = 2;
+        }
+        else if (JOY_NEW(B_BUTTON))
+        {
+            gTasks[taskId].data[0] = 2;
+        }
+        break;
+    case 2:
+        CraftMenuUI_RemoveQuantityWindow();
+        CraftMenuUI_RedrawInfo();
+        gMenuCallback = HandleCraftMenuInput;
+        DestroyTask(taskId);
+        break;
+    }
 }
 
 static const struct YesNoFuncTable sPackUpYesNoFuncs = {

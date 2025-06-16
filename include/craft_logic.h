@@ -10,5 +10,6 @@ extern u8 gCraftActiveSlot;
 
 void CraftLogic_InitSlots(void);
 void CraftLogic_SetSlot(u8 slot, u16 itemId, u16 quantity);
+void CraftLogic_SwapSlots(u8 slotA, u8 slotB);
 
 #endif // GUARD_CRAFT_LOGIC_H
