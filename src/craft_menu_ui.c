@@ -216,9 +216,9 @@ static void UpdateCraftInfoWindow(void)
 
 static void UpdateItemInfoWindow(void)
 {
-    FillWindowPixelBuffer(sCraftItemInfoWindowId, PIXEL_FILL(1));
     if (gCraftSlots[sCraftCursorPos].itemId != ITEM_NONE)
     {
+        FillWindowPixelBuffer(sCraftItemInfoWindowId, PIXEL_FILL(1));
         PutWindowTilemap(sCraftItemInfoWindowId);
         DrawStdFrameWithCustomTileAndPalette(sCraftItemInfoWindowId, TRUE, 0x214, 14);
 
@@ -228,13 +228,12 @@ static void UpdateItemInfoWindow(void)
         ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[sCraftCursorPos].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
         StringExpandPlaceholders(gStringVar4, gText_xVar1);
         AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NORMAL, 2, 13, sInputTextColor, 0, gStringVar4);
+        CopyWindowToVram(sCraftItemInfoWindowId, COPYWIN_FULL);
     }
     else
     {
-        ClearWindowTilemap(sCraftItemInfoWindowId);
+        ClearStdWindowAndFrameToTransparent(sCraftItemInfoWindowId, TRUE);
     }
-
-    CopyWindowToVram(sCraftItemInfoWindowId, COPYWIN_FULL);
 }
 
 
