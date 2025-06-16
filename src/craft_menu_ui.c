@@ -10,6 +10,7 @@
 #include "main.h"
 #include "sprite.h"
 #include "decompress.h"
+#include "sound.h"
 #include "strings.h"
 #include "string_util.h"
 #include "item_icon.h"
