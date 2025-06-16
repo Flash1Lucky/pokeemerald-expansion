@@ -412,15 +412,15 @@ static void Task_CraftMessageClear(u8 taskId)
 
 static void Task_DoCraft(u8 taskId)
 {
-    const struct CraftRecipe *recipe = CraftLogic_FindMatchingRecipe();
+    struct CraftMatch match;
 
-    if (recipe != NULL)
+    if (CraftLogic_FindMatchingRecipe(&match))
     {
-        CraftLogic_ConsumeRecipe(recipe);
-        AddBagItem(recipe->result, recipe->resultQuantity);
+        CraftLogic_ConsumeRecipe(&match);
+        AddBagItem(match.recipe->result, match.recipe->resultQuantity);
         CraftMenuUI_DrawIcons();
 
-        CopyItemNameHandlePlural(recipe->result, gStringVar1, recipe->resultQuantity);
+        CopyItemNameHandlePlural(match.recipe->result, gStringVar1, match.recipe->resultQuantity);
         StringExpandPlaceholders(gStringVar4, gText_CraftedItemVar1);
         CraftMenuUI_DisplayMessage(gStringVar4, taskId, Task_CraftMessageClear);
     }

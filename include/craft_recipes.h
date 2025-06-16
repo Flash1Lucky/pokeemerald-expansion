@@ -6,8 +6,11 @@
 
 struct CraftRecipe
 {
-    const struct ItemSlot *ingredients; // array of required ingredients
-    u8 ingredientCount;
+    // Pattern of items laid out in a grid. Only the rectangle
+    // defined by `width` and `height` is used.
+    const struct ItemSlot *pattern; // array of ItemSlot of size width * height
+    u8 width;   // recipe width  (1-3)
+    u8 height;  // recipe height (1-3)
     u16 result;
     u16 resultQuantity;
 };

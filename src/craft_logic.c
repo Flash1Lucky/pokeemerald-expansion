@@ -36,87 +36,95 @@ void CraftLogic_SwapSlots(u8 slotA, u8 slotB)
     gCraftSlots[slotB] = temp;
 }
 
-static bool8 TableMatchesRecipe(const struct CraftRecipe *recipe)
+static bool8 CheckRecipeAtOffset(const struct CraftRecipe *recipe, u8 offX, u8 offY)
 {
-    int i, j;
+    u8 x, y;
 
-    // Check ingredient quantities
-    for (i = 0; i < recipe->ingredientCount; i++)
+    // Verify pattern region
+    for (y = 0; y < recipe->height; y++)
     {
-        u16 itemId = recipe->ingredients[i].itemId;
-        u16 need = recipe->ingredients[i].quantity;
-        u16 have = 0;
-
-        for (j = 0; j < CRAFT_SLOT_COUNT; j++)
+        for (x = 0; x < recipe->width; x++)
         {
-            if (gCraftSlots[j].itemId == itemId)
-                have += gCraftSlots[j].quantity;
-        }
+            const struct ItemSlot *expect = &recipe->pattern[y * recipe->width + x];
+            const struct ItemSlot *slot = &gCraftSlots[(offY + y) * CRAFT_GRID_SIZE + (offX + x)];
 
-        if (have != need)
-            return FALSE;
-    }
-
-    // Ensure no extra items present
-    for (j = 0; j < CRAFT_SLOT_COUNT; j++)
-    {
-        if (gCraftSlots[j].itemId == ITEM_NONE)
-            continue;
-
-        bool8 found = FALSE;
-        for (i = 0; i < recipe->ingredientCount; i++)
-        {
-            if (gCraftSlots[j].itemId == recipe->ingredients[i].itemId)
+            if (expect->itemId == ITEM_NONE)
             {
-                found = TRUE;
-                break;
+                if (slot->itemId != ITEM_NONE)
+                    return FALSE;
+            }
+            else
+            {
+                if (slot->itemId != expect->itemId || slot->quantity != expect->quantity)
+                    return FALSE;
             }
         }
+    }
 
-        if (!found)
-            return FALSE;
+    // Ensure no items outside pattern area
+    for (y = 0; y < CRAFT_GRID_SIZE; y++)
+    {
+        for (x = 0; x < CRAFT_GRID_SIZE; x++)
+        {
+            if (x >= offX && x < offX + recipe->width && y >= offY && y < offY + recipe->height)
+                continue;
+
+            if (gCraftSlots[y * CRAFT_GRID_SIZE + x].itemId != ITEM_NONE)
+                return FALSE;
+        }
     }
 
     return TRUE;
 }
 
-const struct CraftRecipe *CraftLogic_FindMatchingRecipe(void)
+static bool8 TableMatchesRecipe(const struct CraftRecipe *recipe, struct CraftMatch *match)
+{
+    u8 offX, offY;
+
+    for (offY = 0; offY <= CRAFT_GRID_SIZE - recipe->height; offY++)
+    {
+        for (offX = 0; offX <= CRAFT_GRID_SIZE - recipe->width; offX++)
+        {
+            if (CheckRecipeAtOffset(recipe, offX, offY))
+            {
+                match->recipe = recipe;
+                match->x = offX;
+                match->y = offY;
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
+bool8 CraftLogic_FindMatchingRecipe(struct CraftMatch *match)
 {
     int i;
 
     for (i = 0; i < gCraftRecipeCount; i++)
     {
-        if (TableMatchesRecipe(&gCraftRecipes[i]))
-            return &gCraftRecipes[i];
+        if (TableMatchesRecipe(&gCraftRecipes[i], match))
+            return TRUE;
     }
 
-    return NULL;
+    return FALSE;
 }
 
-void CraftLogic_ConsumeRecipe(const struct CraftRecipe *recipe)
+void CraftLogic_ConsumeRecipe(const struct CraftMatch *match)
 {
-    int i, j;
+    u8 x, y;
+    const struct CraftRecipe *recipe = match->recipe;
 
-    for (i = 0; i < recipe->ingredientCount; i++)
+    for (y = 0; y < recipe->height; y++)
     {
-        u16 itemId = recipe->ingredients[i].itemId;
-        u16 remaining = recipe->ingredients[i].quantity;
-
-        for (j = 0; j < CRAFT_SLOT_COUNT && remaining > 0; j++)
+        for (x = 0; x < recipe->width; x++)
         {
-            struct ItemSlot *slot = &gCraftSlots[j];
+            const struct ItemSlot *expect = &recipe->pattern[y * recipe->width + x];
+            struct ItemSlot *slot = &gCraftSlots[(match->y + y) * CRAFT_GRID_SIZE + (match->x + x)];
 
-            if (slot->itemId != itemId)
-                continue;
-
-            if (slot->quantity > remaining)
+            if (expect->itemId != ITEM_NONE)
             {
-                slot->quantity -= remaining;
-                remaining = 0;
-            }
-            else
-            {
-                remaining -= slot->quantity;
                 slot->itemId = ITEM_NONE;
                 slot->quantity = 0;
             }
