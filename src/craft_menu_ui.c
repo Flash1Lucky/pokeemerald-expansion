@@ -269,11 +269,11 @@ static void CreateWorkbenchSprite(void)
 
     const s16 xBase = WB_CENTER_X - 32;
     const s16 yBase = WB_CENTER_Y - 32;
-    for (row = 0; row < 3; row++)
+    for (row = 0; row < CRAFT_ROWS; row++)
     {
-        for (col = 0; col < 3; col++)
+        for (col = 0; col < CRAFT_COLS; col++)
         {
-            i = row * 3 + col;
+            i = row * CRAFT_COLS + col;
             sWorkbenchSpriteIds[i] = CreateSprite(&sWorkbenchTemplates[i], xBase + 32 * col, yBase + 32 * row, 0);
         }
     }
@@ -401,13 +401,13 @@ bool8 CraftMenuUI_HandleDpadInput(void)
 {
     u8 oldPos = sCraftCursorPos;
 
-    if (JOY_NEW(DPAD_UP) && sCraftCursorPos >= 3)
-        sCraftCursorPos -= 3;
-    else if (JOY_NEW(DPAD_DOWN) && sCraftCursorPos < 6)
-        sCraftCursorPos += 3;
-    else if (JOY_NEW(DPAD_LEFT) && sCraftCursorPos % 3 != 0)
+    if (JOY_NEW(DPAD_UP) && sCraftCursorPos >= CRAFT_COLS)
+        sCraftCursorPos -= CRAFT_COLS;
+    else if (JOY_NEW(DPAD_DOWN) && sCraftCursorPos < CRAFT_SLOT_COUNT - CRAFT_COLS)
+        sCraftCursorPos += CRAFT_COLS;
+    else if (JOY_NEW(DPAD_LEFT) && sCraftCursorPos % CRAFT_COLS != 0)
         sCraftCursorPos--;
-    else if (JOY_NEW(DPAD_RIGHT) && sCraftCursorPos % 3 != 2)
+    else if (JOY_NEW(DPAD_RIGHT) && sCraftCursorPos % CRAFT_COLS != CRAFT_COLS - 1)
         sCraftCursorPos++;
 
     return (sCraftCursorPos != oldPos);
