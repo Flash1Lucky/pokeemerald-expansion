@@ -15,6 +15,7 @@
 #include "string_util.h"
 #include "item_icon.h"
 #include "item_menu.h"
+#include "item.h"
 #include "craft_menu.h"
 #include "constants/songs.h"
 #include "constants/items.h"
@@ -39,6 +40,7 @@
 enum
 {
     WINDOW_CRAFT_GRID,
+    WINDOW_CRAFT_ITEMINFO,
     WINDOW_CRAFT_INFO,
     WINDOW_CRAFT_YESNO,
     WINDOW_CRAFT_ACTIONS,
@@ -46,6 +48,7 @@ enum
 };
 
 EWRAM_DATA static u8 sCraftGridWindowId = 0;
+EWRAM_DATA static u8 sCraftItemInfoWindowId = 0;
 EWRAM_DATA static u8 sCraftInfoWindowId = 0;
 EWRAM_DATA static u8 sPackUpMessageWindowId = 0;
 EWRAM_DATA static u8 sWorkbenchSpriteIds[CRAFT_SLOT_COUNT];
@@ -87,7 +90,7 @@ static const struct GridSlotPos sWorkbenchSlotPositions[CRAFT_SLOT_COUNT] =
 };
 
 static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
-{
+{ 
     [WINDOW_CRAFT_GRID] = {
         .bg = 0,
         .tilemapLeft = 9,
@@ -96,6 +99,15 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
         .height = 10,
         .paletteNum = 15,
         .baseBlock = 1
+    },
+    [WINDOW_CRAFT_ITEMINFO] = {
+        .bg = 0,
+        .tilemapLeft = 1,
+        .tilemapTop = 3,
+        .width = 8,
+        .height = 4,
+        .paletteNum = 15,
+        .baseBlock = 120
     },
     [WINDOW_CRAFT_INFO] = {
         .bg = 0,
@@ -174,6 +186,7 @@ static const struct SpriteTemplate sWorkbenchTemplates[CRAFT_SLOT_COUNT] =
 static void LoadCraftWindows(void)
 {
     sCraftGridWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_GRID]);
+    sCraftItemInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_ITEMINFO]);
     sCraftInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
 }
 
@@ -182,6 +195,13 @@ static void ShowGridWindow(void)
     FillWindowPixelBuffer(sCraftGridWindowId, PIXEL_FILL(0));
     PutWindowTilemap(sCraftGridWindowId);
     CopyWindowToVram(sCraftGridWindowId, COPYWIN_FULL);
+}
+
+static void ShowItemInfoWindow(void)
+{
+    DrawStdFrameWithCustomTileAndPalette(sCraftItemInfoWindowId, TRUE, 0x214, 14);
+    FillWindowPixelBuffer(sCraftItemInfoWindowId, PIXEL_FILL(1));
+    CopyWindowToVram(sCraftItemInfoWindowId, COPYWIN_FULL);
 }
 
 static void ShowInfoWindow(void)
@@ -199,6 +219,21 @@ static void UpdateCraftInfoWindow(void)
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 85, 7, sHintTextColor, 0, sText_CraftingUi_StartButtonCraft);
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 148, 7, sInputTextColor, 0, sText_CraftingUi_SelectButton);
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_SMALL, 175, 2, sInputTextColor, 0, sText_CraftingUi_RecipeBook);
+}
+
+static void UpdateItemInfoWindow(void)
+{
+    FillWindowPixelBuffer(sCraftItemInfoWindowId, PIXEL_FILL(1));
+    if (gCraftSlots[sCraftCursorPos].itemId != ITEM_NONE)
+    {
+        u8 name[ITEM_NAME_LENGTH];
+        CopyItemName(gCraftSlots[sCraftCursorPos].itemId, name);
+        AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NORMAL, 2, 1, sInputTextColor, 0, name);
+        ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[sCraftCursorPos].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
+        StringExpandPlaceholders(gStringVar4, gText_xVar1);
+        AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NORMAL, 2, 13, sInputTextColor, 0, gStringVar4);
+    }
+    CopyWindowToVram(sCraftItemInfoWindowId, COPYWIN_FULL);
 }
 
 
@@ -268,6 +303,8 @@ void CraftMenuUI_DrawIcons(void)
             }
         }
     }
+
+    UpdateItemInfoWindow();
 }
 
 void CraftMenuUI_UpdateGrid(void)
@@ -284,6 +321,7 @@ void CraftMenuUI_UpdateGrid(void)
         }
     }
     CopyWindowToVram(sCraftGridWindowId, COPYWIN_FULL);
+    UpdateItemInfoWindow();
 }
 
 bool8 CraftMenuUI_HandleDpadInput(void)
@@ -316,11 +354,13 @@ void CraftMenuUI_Init(void)
 
     LoadCraftWindows();
     ShowGridWindow();
+    ShowItemInfoWindow();
     ShowInfoWindow();
     CreateWorkbenchSprite();
     CraftMenuUI_DrawIcons();
     UpdateCraftInfoWindow();
     CraftMenuUI_UpdateGrid();
+    UpdateItemInfoWindow();
 }
 
 void CraftMenuUI_Close(void)
@@ -332,6 +372,12 @@ void CraftMenuUI_Close(void)
     {
         RemoveWindow(sCraftGridWindowId);
         sCraftGridWindowId = WINDOW_NONE;
+    }
+    ClearStdWindowAndFrame(sCraftItemInfoWindowId, TRUE);
+    if (sCraftItemInfoWindowId != WINDOW_NONE)
+    {
+        RemoveWindow(sCraftItemInfoWindowId);
+        sCraftItemInfoWindowId = WINDOW_NONE;
     }
     ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
     if (sCraftInfoWindowId != WINDOW_NONE)
