@@ -143,16 +143,20 @@ static bool8 HandleCraftMenuInput(void)
     if (JOY_NEW(A_BUTTON))
     {
         PlaySE(SE_SELECT);
-        if (gCraftSlots[CraftMenuUI_GetCursorPos()].itemId != ITEM_NONE)
         {
-            CraftMenuUI_ShowActionMenu();
-            gMenuCallback = HandleSlotActionInput;
-            return FALSE;
-        }
-        else
-        {
-            OpenBagFromCraftMenu();
-            return TRUE;
+            int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
+            int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
+            if (gCraftSlots[row][col].itemId != ITEM_NONE)
+            {
+                CraftMenuUI_ShowActionMenu();
+                gMenuCallback = HandleSlotActionInput;
+                return FALSE;
+            }
+            else
+            {
+                OpenBagFromCraftMenu();
+                return TRUE;
+            }
         }
     }
 
@@ -185,26 +189,33 @@ static void CloseCraftMenu(void)
 
 static bool8 CraftMenu_HasItemsOnTable(void)
 {
-    int i;
-    for (i = 0; i < CRAFT_SLOT_COUNT; i++)
+    int row, col;
+    for (row = 0; row < CRAFT_ROWS; row++)
     {
-        if (gCraftSlots[i].itemId != ITEM_NONE)
-            return TRUE;
+        for (col = 0; col < CRAFT_COLS; col++)
+        {
+            if (gCraftSlots[row][col].itemId != ITEM_NONE)
+                return TRUE;
+        }
     }
     return FALSE;
 }
 
 static void PackUpYes(u8 taskId)
 {
-    int i;
+    int row, col;
 
-    for (i = 0; i < CRAFT_SLOT_COUNT; i++)
+    for (row = 0; row < CRAFT_ROWS; row++)
     {
-        if (gCraftSlots[i].itemId != ITEM_NONE)
+        for (col = 0; col < CRAFT_COLS; col++)
         {
-            AddBagItem(gCraftSlots[i].itemId, gCraftSlots[i].quantity);
-            gCraftSlots[i].itemId = ITEM_NONE;
-            gCraftSlots[i].quantity = 0;
+            struct ItemSlot *slot = &gCraftSlots[row][col];
+            if (slot->itemId != ITEM_NONE)
+            {
+                AddBagItem(slot->itemId, slot->quantity);
+                slot->itemId = ITEM_NONE;
+                slot->quantity = 0;
+            }
         }
     }
 
@@ -233,9 +244,10 @@ static void Action_SwapItem(void)
 static void Action_RemoveItem(void)
 {
     u8 slot = CraftMenuUI_GetCursorPos();
-    AddBagItem(gCraftSlots[slot].itemId, gCraftSlots[slot].quantity);
-    gCraftSlots[slot].itemId = ITEM_NONE;
-    gCraftSlots[slot].quantity = 0;
+    struct ItemSlot *s = &gCraftSlots[CRAFT_SLOT_ROW(slot)][CRAFT_SLOT_COL(slot)];
+    AddBagItem(s->itemId, s->quantity);
+    s->itemId = ITEM_NONE;
+    s->quantity = 0;
     CraftMenuUI_DrawIcons();
 }
 
@@ -321,8 +333,12 @@ static void Task_AdjustQuantity(u8 taskId)
     switch (gTasks[taskId].data[0])
     {
     case 0:
-        sItemId = gCraftSlots[CraftMenuUI_GetCursorPos()].itemId;
-        sOldQty = gCraftSlots[CraftMenuUI_GetCursorPos()].quantity;
+        {
+            int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
+            int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
+            sItemId = gCraftSlots[row][col].itemId;
+            sOldQty = gCraftSlots[row][col].quantity;
+        }
         sMaxQty = sOldQty + CountTotalItemQuantityInBag(sItemId);
         gTasks[taskId].data[1] = sOldQty;
         gMenuCallback = NULL;
@@ -342,11 +358,13 @@ static void Task_AdjustQuantity(u8 taskId)
         if (JOY_NEW(A_BUTTON))
         {
             u16 newQty = gTasks[taskId].data[1];
+            int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
+            int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
             if (newQty > sOldQty)
                 RemoveBagItem(sItemId, newQty - sOldQty);
             else if (newQty < sOldQty)
                 AddBagItem(sItemId, sOldQty - newQty);
-            gCraftSlots[CraftMenuUI_GetCursorPos()].quantity = newQty;
+            gCraftSlots[row][col].quantity = newQty;
             CraftMenuUI_DrawIcons();
             gTasks[taskId].data[0] = 2;
         }

@@ -2404,8 +2404,9 @@ static void FinishCraftSelection(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
 
-    if (gCraftSlots[gCraftActiveSlot].itemId != ITEM_NONE)
-        AddBagItem(gCraftSlots[gCraftActiveSlot].itemId, gCraftSlots[gCraftActiveSlot].quantity);
+    if (gCraftSlots[CRAFT_SLOT_ROW(gCraftActiveSlot)][CRAFT_SLOT_COL(gCraftActiveSlot)].itemId != ITEM_NONE)
+        AddBagItem(gCraftSlots[CRAFT_SLOT_ROW(gCraftActiveSlot)][CRAFT_SLOT_COL(gCraftActiveSlot)].itemId,
+                   gCraftSlots[CRAFT_SLOT_ROW(gCraftActiveSlot)][CRAFT_SLOT_COL(gCraftActiveSlot)].quantity);
 
     CraftLogic_SetSlot(gCraftActiveSlot, gSpecialVar_ItemId, tItemCount);
     RemoveBagItem(gSpecialVar_ItemId, tItemCount);

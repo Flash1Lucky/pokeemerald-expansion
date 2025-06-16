@@ -131,38 +131,41 @@ void CB2_CraftDebugMenu(void)
 
 static void PrintSlots(u8 windowId)
 {
-    u8 i;
+    int row, col, index;
 
     FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
-
-    for (i = 0; i < CRAFT_SLOT_COUNT; i++)
+    index = 0;
+    for (row = 0; row < CRAFT_ROWS; row++)
     {
-        u8 lineBuffer[64];
-        u8 qtyBuffer[16];
-        u8 itemName[32];
-        u8 numBuffer[4];
-        u8 y = i * 12;
-
-        StringCopy(lineBuffer, sText_SlotLabel);
-        ConvertIntToDecimalStringN(numBuffer, i + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
-        StringAppend(lineBuffer, numBuffer);
-        StringAppend(lineBuffer, sText_ColonSpace);
-
-        if (gCraftSlots[i].itemId != ITEM_NONE)
+        for (col = 0; col < CRAFT_COLS; col++, index++)
         {
-            CopyItemName(gCraftSlots[i].itemId, itemName);
-            StringAppend(lineBuffer, itemName);
+            u8 lineBuffer[64];
+            u8 qtyBuffer[16];
+            u8 itemName[32];
+            u8 numBuffer[4];
+            u8 y = index * 12;
 
-            ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[i].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
-            StringExpandPlaceholders(qtyBuffer, gText_xVar1);
-            StringAppend(lineBuffer, qtyBuffer);
-        }
-        else
-        {
-            StringAppend(lineBuffer, sText_None);
-        }
+            StringCopy(lineBuffer, sText_SlotLabel);
+            ConvertIntToDecimalStringN(numBuffer, index + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
+            StringAppend(lineBuffer, numBuffer);
+            StringAppend(lineBuffer, sText_ColonSpace);
 
-        AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, lineBuffer);
+            if (gCraftSlots[row][col].itemId != ITEM_NONE)
+            {
+                CopyItemName(gCraftSlots[row][col].itemId, itemName);
+                StringAppend(lineBuffer, itemName);
+
+                ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[row][col].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
+                StringExpandPlaceholders(qtyBuffer, gText_xVar1);
+                StringAppend(lineBuffer, qtyBuffer);
+            }
+            else
+            {
+                StringAppend(lineBuffer, sText_None);
+            }
+
+            AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, lineBuffer);
+        }
     }
 
     CopyWindowToVram(windowId, COPYWIN_FULL);
