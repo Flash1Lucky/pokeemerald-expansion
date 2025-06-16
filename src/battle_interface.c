@@ -2903,7 +2903,7 @@ static const struct SpriteTemplate sSpriteTemplate_LastUsedBallWindow =
 };
 
 #define MOVE_INFO_WINDOW_TAG 0xE722
-#define FALSE_SWIPE_WINDOW_TAG 0xE723
+#define DONT_KO_WINDOW_TAG 0xE723
 
 static const struct OamData sOamData_MoveInfoWindow =
 {
@@ -2930,7 +2930,41 @@ static const struct SpriteTemplate sSpriteTemplate_MoveInfoWindow =
     .anims = gDummySpriteAnimTable,
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCB_FalseSwipeWin
+#if B_FALSE_SWIPE_TOGGLE
+static const struct OamData sOamData_DontKoWindow =
+};
+
+static const struct SpriteTemplate sSpriteTemplate_DontKoWindow =
+{
+    .tileTag = DONT_KO_WINDOW_TAG,
+    .oam = &sOamData_DontKoWindow,
+#endif // B_FALSE_SWIPE_TOGGLE
+#if B_FALSE_SWIPE_TOGGLE
+static const u8 sDontKoWindowGfx[] = INCBIN_U8("graphics/battle_interface/move_info_window_r.4bpp");
+static const struct SpriteSheet sSpriteSheet_DontKoWindow =
+    sDontKoWindowGfx, sizeof(sDontKoWindowGfx), DONT_KO_WINDOW_TAG
+#endif // B_FALSE_SWIPE_TOGGLE
+#if B_FALSE_SWIPE_TOGGLE
+static u8 *AddTextPrinterAndCreateDontKoWindow(const u8 *str, u32 x, u32 y, u32 color1, u32 color2, u32 color3, u32 *windowId)
+static void TextIntoDontKoWindow(void *dest, u8 *windowTileData)
+void PrintOnDontKoWindow(bool32 active)
+    windowTileData = AddTextPrinterAndCreateDontKoWindow(
+    TextIntoDontKoWindow((void *)(OBJ_VRAM0 + gSprites[gBattleStruct->falseSwipeSpriteId].oam.tileNum * 32), windowTileData);
+#endif // B_FALSE_SWIPE_TOGGLE
+    .priority = 1,
+    .paletteNum = 0,
+    .affineParam = 0,
+};
+
+static const struct SpriteTemplate sSpriteTemplate_FalseSwipeWindow =
+{
+    .tileTag = FALSE_SWIPE_WINDOW_TAG,
+    .paletteTag = ABILITY_POP_UP_TAG,
+    .oam = &sOamData_FalseSwipeWindow,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCB_MoveInfoWin
 };
 
 static const struct OamData sOamData_FalseSwipeWindow =
@@ -2958,7 +2992,7 @@ static const struct SpriteTemplate sSpriteTemplate_FalseSwipeWindow =
     .anims = gDummySpriteAnimTable,
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCB_MoveInfoWin
+    .callback = SpriteCB_FalseSwipeWin
 };
 
 #if B_LAST_USED_BALL_BUTTON == R_BUTTON && B_LAST_USED_BALL_CYCLE == TRUE
@@ -3030,7 +3064,14 @@ void PrintOnFalseSwipeWindow(bool32 active)
     if (gBattleStruct->falseSwipeSpriteId == MAX_SPRITES)
         return;
 
-    windowTileData = AddTextPrinterAndCreateWindowOnFalseSwipe(sDontKoText, 1, 0, 7, active ? 7 : 11, 1, &windowId);
+    windowTileData = AddTextPrinterAndCreateWindowOnFalseSwipe(
+        sDontKoText,
+        1,
+        0,
+        TEXT_COLOR_TRANSPARENT,
+        active ? TEXT_COLOR_WHITE : TEXT_COLOR_DARK_GRAY,
+        TEXT_COLOR_LIGHT_GRAY,
+        &windowId);
     TextIntoFalseSwipeWindow((void *)(OBJ_VRAM0 + gSprites[gBattleStruct->falseSwipeSpriteId].oam.tileNum * 32), windowTileData);
     RemoveWindow(windowId);
 }
@@ -3100,13 +3141,14 @@ void TryAddLastUsedBallItemSprites(void)
 
     // window
     LoadSpritePalette(&sSpritePalette_AbilityPopUp);
-    if (GetSpriteTileStartByTag(LAST_BALL_WINDOW_TAG) == 0xFFFF)
-        LoadSpriteSheet(&sSpriteSheet_LastUsedBallWindow);
-
-    if (gBattleStruct->ballSpriteIds[1] == MAX_SPRITES)
-    {
-        gBattleStruct->ballSpriteIds[1] = CreateSprite(&sSpriteTemplate_LastUsedBallWindow,
-                                                       LAST_BALL_WIN_X_0,
+#if B_FALSE_SWIPE_TOGGLE
+void TryToAddDontKoWindow(void)
+    if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+        LoadSpriteSheet(&sSpriteSheet_DontKoWindow);
+        gBattleStruct->falseSwipeSpriteId = CreateSprite(&sSpriteTemplate_DontKoWindow, LAST_BALL_WIN_X_0, LAST_USED_WIN_Y, 6);
+    PrintOnDontKoWindow(gBattleStruct->falseSwipeActive);
+void TryToHideDontKoWindow(void)
+    FreeSpriteTilesByTag(DONT_KO_WINDOW_TAG);
                                                        LAST_USED_WIN_Y, 5);
         gSprites[gBattleStruct->ballSpriteIds[1]].sHide = FALSE;
         gSprites[gBattleStruct->moveInfoSpriteId].sHide = TRUE;
@@ -3169,7 +3211,6 @@ void TryToAddFalseSwipeWindow(void)
     }
 
     PrintOnFalseSwipeWindow(gBattleStruct->falseSwipeActive);
-
 }
 
 void TryToHideFalseSwipeWindow(void)
@@ -3211,6 +3252,10 @@ static void SpriteCB_LastUsedBallWin(struct Sprite *sprite)
     }
 }
 
+#else
+void TryToAddDontKoWindow(void) {}
+void TryToHideDontKoWindow(void) {}
+#endif // B_FALSE_SWIPE_TOGGLE
 static void SpriteCB_LastUsedBall(struct Sprite *sprite)
 {
     if (sprite->sHide)
