@@ -324,6 +324,7 @@ void CraftMenuUI_Init(void)
     }
     sCraftCursorPos = 0;
     sActionMenuWindowId = WINDOW_NONE;
+    sQuantityWindowId = WINDOW_NONE;
     sInSwapMode = FALSE;
 
     LoadCraftWindows();
