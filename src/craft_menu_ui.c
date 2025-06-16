@@ -51,7 +51,7 @@ EWRAM_DATA static u8 sPackUpMessageWindowId = 0;
 EWRAM_DATA static u8 sWorkbenchSpriteIds[CRAFT_SLOT_COUNT];
 EWRAM_DATA static u8 sCraftCursorPos = 0;
 EWRAM_DATA static u8 sCraftSlotSpriteIds[CRAFT_SLOT_COUNT];
-EWRAM_DATA static u8 sActionMenuWindowId = WINDOW_NONE;
+EWRAM_DATA static u8 sActionMenuWindowId;
 EWRAM_DATA static bool8 sInSwapMode = FALSE;
 
 static const u8 sText_CraftingUi_AButton[] = _("{A_BUTTON}");
