@@ -301,19 +301,31 @@ static bool8 HandleSwapSlotInput(void)
         return FALSE;
     }
 
+
     if (JOY_NEW(A_BUTTON))
     {
         PlaySE(SE_SELECT);
         u8 to = CraftMenuUI_GetCursorPos();
         if (to != sSwapFromSlot)
         {
-            struct ItemSlot temp = gCraftSlots[sSwapFromSlot];
-            gCraftSlots[sSwapFromSlot] = gCraftSlots[to];
-            gCraftSlots[to] = temp;
+            if (gCraftSlots[to].itemId == ITEM_NONE)
+            {
+                gCraftSlots[to] = gCraftSlots[sSwapFromSlot];
+                gCraftSlots[sSwapFromSlot].itemId = ITEM_NONE;
+                gCraftSlots[sSwapFromSlot].quantity = 0;
+            }
+            else
+            {
+                struct ItemSlot temp = gCraftSlots[to];
+                gCraftSlots[to] = gCraftSlots[sSwapFromSlot];
+                gCraftSlots[sSwapFromSlot] = temp;
+            }
             CraftMenuUI_DrawIcons();
+            CraftMenuUI_SetCursorPos(to);
         }
         CraftMenuUI_EndSwapMode();
         gMenuCallback = HandleCraftMenuInput;
+        gMain.newKeys = 0;
     }
 
     return FALSE;
