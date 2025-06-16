@@ -13,6 +13,7 @@
 #include "sound.h"
 #include "strings.h"
 #include "string_util.h"
+#include "international_string_util.h"
 #include "item_icon.h"
 #include "item_menu.h"
 #include "craft_menu.h"
