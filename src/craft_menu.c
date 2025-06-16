@@ -270,7 +270,8 @@ static bool8 HandleSlotActionInput(void)
         return TRUE;
     case SLOT_ACTION_ADJUST_QTY:
         Action_AdjustQuantity();
-        break;
+        gMenuCallback = NULL;
+        return FALSE;
     case SLOT_ACTION_SWAP_SLOT:
         Action_StartSwapSlot();
         break;
@@ -333,6 +334,7 @@ static void Task_AdjustQuantity(u8 taskId)
         sOldQty = gCraftSlots[CraftMenuUI_GetCursorPos()].quantity;
         sMaxQty = sOldQty + CountTotalItemQuantityInBag(sItemId);
         gTasks[taskId].data[1] = sOldQty;
+        gMenuCallback = NULL;
         CopyItemNameHandlePlural(sItemId, gStringVar1, 2);
         StringExpandPlaceholders(gStringVar4, sText_CraftPlaceHowManyVar1);
         CraftMenuUI_PrintInfo(gStringVar4, 2, 7);
