@@ -311,7 +311,6 @@ static bool8 HandleSlotActionInput(void)
     {
     case SLOT_ACTION_SWAP_ITEM:
         CraftMenuUI_HideActionMenu();
-        CraftMenuUI_RedrawInfo();
         Action_SwapItem();
         return TRUE;
     case SLOT_ACTION_ADJUST_QTY:
@@ -321,7 +320,6 @@ static bool8 HandleSlotActionInput(void)
         return FALSE;
     case SLOT_ACTION_SWAP_SLOT:
         CraftMenuUI_HideActionMenu();
-        CraftMenuUI_RedrawInfo();
         Action_StartSwapSlot();
         return FALSE;
     case SLOT_ACTION_REMOVE_ITEM:
@@ -414,8 +412,8 @@ static void Task_AdjustQuantity_HandleInput(u8 taskId)
             AddBagItem(sAdjustItemId, sAdjustOldQty - newQty);
 
         gCraftSlots[row][col].quantity = newQty;
-        CraftMenuUI_DrawIcons();
         CraftMenuUI_RemoveQuantityWindow();
+        CraftMenuUI_DrawIcons();
         CraftMenuUI_ClearAdjustQtyMessage();
         gMenuCallback = HandleCraftMenuInput;
         DestroyTask(taskId);

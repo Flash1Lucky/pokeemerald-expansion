@@ -274,6 +274,8 @@ static void ShowItemInfoWindow(void)
 
 static void UpdateCraftInfoWindow(void)
 {
+    if (sCraftInfoWindowId == WINDOW_NONE)
+        return;
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 2, 7, sInputTextColor, 0, sText_CraftingUi_AButton);
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_SMALL, 13, 2, sInputTextColor, 0, sText_CraftingUi_AddItem);
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 45, 7, sInputTextColor, 0, sText_CraftingUi_BButtonExit);
@@ -285,6 +287,9 @@ static void UpdateCraftInfoWindow(void)
 
 static void UpdateItemInfoWindow(void)
 {
+    if (sCraftItemInfoWindowId == WINDOW_NONE)
+        return;
+
     int row = CRAFT_SLOT_ROW(sCraftCursorPos);
     int col = CRAFT_SLOT_COL(sCraftCursorPos);
 
@@ -299,8 +304,7 @@ static void UpdateItemInfoWindow(void)
         u32 width = WindowWidthPx(sCraftItemInfoWindowId) - 16;
         u8 fontId = GetFontIdToFit(name, FONT_NORMAL, 0, width);
         BreakStringAutomatic(name, width, 0, fontId, HIDE_SCROLL_PROMPT);
-        AddTextPrinterParameterized4(sCraftItemInfoWindowId, fontId, 2, 1, 0, 0, sInputTextColor, 0, name);
-        //AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NARROWER, 2, 1, sInputTextColor, 0, name);
+        AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NARROWER, 2, 1, sInputTextColor, 0, name);
         ConvertIntToDecimalStringN(gStringVar1, gCraftSlots[row][col].quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
         StringExpandPlaceholders(gStringVar4, gText_xVar1);
         AddTextPrinterParameterized3(sCraftItemInfoWindowId, FONT_NORMAL, 2, 45, sInputTextColor, 0, gStringVar4);
@@ -431,8 +435,11 @@ void CraftMenuUI_DrawIcons(void)
     }
 
     UpdateItemInfoWindow();
-    UpdateCraftInfoWindow();
-    CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
+    if (sCraftInfoWindowId != WINDOW_NONE)
+    {
+        UpdateCraftInfoWindow();
+        CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
+    }
 }
 
 void CraftMenuUI_UpdateGrid(void)
@@ -572,6 +579,7 @@ s8 CraftMenuUI_ProcessActionMenuInput(void)
 void CraftMenuUI_StartSwapMode(void)
 {
     sInSwapMode = TRUE;
+    HideInfoWindow();
     CraftMenuUI_UpdateGrid();
 }
 
@@ -579,6 +587,7 @@ void CraftMenuUI_EndSwapMode(void)
 {
     sInSwapMode = FALSE;
     CraftMenuUI_UpdateGrid();
+    CraftMenuUI_RedrawInfo();
 }
 
 bool8 CraftMenuUI_InSwapMode(void)
@@ -652,6 +661,7 @@ void CraftMenuUI_ClearMessage(void)
 
 void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
 {
+    HideItemInfoWindow();
     CraftMenuUI_DisplayMessage(taskId, gText_PackUpQuestion, nextTask);
 }
 
