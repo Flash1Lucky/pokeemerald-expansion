@@ -144,8 +144,8 @@ static bool8 HandleCraftMenuInput(void)
     {
         PlaySE(SE_SELECT);
         {
-            int row = CraftMenuUI_GetCursorPos() / CRAFT_COLS;
-            int col = CraftMenuUI_GetCursorPos() % CRAFT_COLS;
+            int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
+            int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
             if (gCraftSlots[row][col].itemId != ITEM_NONE)
             {
                 CraftMenuUI_ShowActionMenu();
@@ -244,7 +244,7 @@ static void Action_SwapItem(void)
 static void Action_RemoveItem(void)
 {
     u8 slot = CraftMenuUI_GetCursorPos();
-    struct ItemSlot *s = &gCraftSlots[slot / CRAFT_COLS][slot % CRAFT_COLS];
+    struct ItemSlot *s = &gCraftSlots[CRAFT_SLOT_ROW(slot)][CRAFT_SLOT_COL(slot)];
     AddBagItem(s->itemId, s->quantity);
     s->itemId = ITEM_NONE;
     s->quantity = 0;
@@ -334,8 +334,8 @@ static void Task_AdjustQuantity(u8 taskId)
     {
     case 0:
         {
-            int row = CraftMenuUI_GetCursorPos() / CRAFT_COLS;
-            int col = CraftMenuUI_GetCursorPos() % CRAFT_COLS;
+            int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
+            int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
             sItemId = gCraftSlots[row][col].itemId;
             sOldQty = gCraftSlots[row][col].quantity;
         }
@@ -358,8 +358,8 @@ static void Task_AdjustQuantity(u8 taskId)
         if (JOY_NEW(A_BUTTON))
         {
             u16 newQty = gTasks[taskId].data[1];
-            int row = CraftMenuUI_GetCursorPos() / CRAFT_COLS;
-            int col = CraftMenuUI_GetCursorPos() % CRAFT_COLS;
+            int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
+            int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
             if (newQty > sOldQty)
                 RemoveBagItem(sItemId, newQty - sOldQty);
             else if (newQty < sOldQty)

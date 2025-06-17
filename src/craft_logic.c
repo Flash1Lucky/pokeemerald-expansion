@@ -23,8 +23,8 @@ void CraftLogic_SetSlot(u8 slot, u16 itemId, u16 quantity)
     if (slot >= CRAFT_SLOT_COUNT)
         return;
 
-    gCraftSlots[slot / CRAFT_COLS][slot % CRAFT_COLS].itemId = itemId;
-    gCraftSlots[slot / CRAFT_COLS][slot % CRAFT_COLS].quantity = quantity;
+    gCraftSlots[CRAFT_SLOT_ROW(slot)][CRAFT_SLOT_COL(slot)].itemId = itemId;
+    gCraftSlots[CRAFT_SLOT_ROW(slot)][CRAFT_SLOT_COL(slot)].quantity = quantity;
 }
 
 void CraftLogic_SwapSlots(u8 slotA, u8 slotB)
@@ -32,7 +32,7 @@ void CraftLogic_SwapSlots(u8 slotA, u8 slotB)
     if (slotA >= CRAFT_SLOT_COUNT || slotB >= CRAFT_SLOT_COUNT || slotA == slotB)
         return;
 
-    struct ItemSlot temp = gCraftSlots[slotA / CRAFT_COLS][slotA % CRAFT_COLS];
-    gCraftSlots[slotA / CRAFT_COLS][slotA % CRAFT_COLS] = gCraftSlots[slotB / CRAFT_COLS][slotB % CRAFT_COLS];
-    gCraftSlots[slotB / CRAFT_COLS][slotB % CRAFT_COLS] = temp;
+    struct ItemSlot temp = gCraftSlots[CRAFT_SLOT_ROW(slotA)][CRAFT_SLOT_COL(slotA)];
+    gCraftSlots[CRAFT_SLOT_ROW(slotA)][CRAFT_SLOT_COL(slotA)] = gCraftSlots[CRAFT_SLOT_ROW(slotB)][CRAFT_SLOT_COL(slotB)];
+    gCraftSlots[CRAFT_SLOT_ROW(slotB)][CRAFT_SLOT_COL(slotB)] = temp;
 }

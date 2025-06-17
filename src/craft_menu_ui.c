@@ -232,8 +232,8 @@ static void UpdateCraftInfoWindow(void)
 
 static void UpdateItemInfoWindow(void)
 {
-    int row = sCraftCursorPos / CRAFT_COLS;
-    int col = sCraftCursorPos % CRAFT_COLS;
+    int row = CRAFT_SLOT_ROW(sCraftCursorPos);
+    int col = CRAFT_SLOT_COL(sCraftCursorPos);
 
     if (gCraftSlots[row][col].itemId != ITEM_NONE)
     {
