@@ -156,3 +156,57 @@ u16 CraftLogic_Craft(const struct CraftRecipeList *recipes, u16 recipeCount)
 
     return 0;
 }
+
+static bool8 CanCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols)
+{
+    int r, c;
+
+    for (r = 0; r < patRows; r++)
+    {
+        for (c = 0; c < patCols; c++)
+        {
+            u16 itemId = recipe->pattern[r][c];
+            if (itemId != ITEM_NONE)
+            {
+                struct ItemSlot *slot = &gCraftSlots[baseRow + r][baseCol + c];
+                if (slot->itemId != itemId || slot->quantity == 0)
+                    return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+bool8 CraftLogic_CanCraft(const struct CraftRecipeList *recipes, u16 recipeCount)
+{
+    u16 itemId;
+
+    for (itemId = 0; itemId < recipeCount; itemId++)
+    {
+        const struct CraftRecipeList *list = &recipes[itemId];
+        u8 r;
+        for (r = 0; r < list->count; r++)
+        {
+            const struct CraftRecipe *recipe = &list->recipes[r];
+            int patRows, patCols;
+
+            GetRecipeDimensions(recipe, &patRows, &patCols);
+
+            if (patRows == 0 || patCols == 0)
+                continue;
+
+            int baseRow, baseCol;
+            for (baseRow = 0; baseRow <= CRAFT_ROWS - patRows; baseRow++)
+            {
+                for (baseCol = 0; baseCol <= CRAFT_COLS - patCols; baseCol++)
+                {
+                    if (CanCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols))
+                        return TRUE;
+                }
+            }
+        }
+    }
+
+    return FALSE;
+}
