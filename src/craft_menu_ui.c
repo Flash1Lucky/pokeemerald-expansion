@@ -66,6 +66,12 @@ EWRAM_DATA static u8 sActionMenuWindowId;
 EWRAM_DATA static u8 sQuantityWindowId;
 EWRAM_DATA static bool8 sInSwapMode = FALSE;
 
+// New helpers for showing/hiding info and item info windows
+static void HideInfoWindow(void);
+static void HideItemInfoWindow(void);
+static void ShowItemInfoWindow(void);
+static void UpdateItemInfoWindow(void);
+
 static const u8 sText_CraftingUi_AButton[] = _("{A_BUTTON}");
 static const u8 sText_CraftingUi_AddItem[] = _("Add\nItem");
 static const u8 sText_CraftingUi_BButtonExit[] = _("{B_BUTTON} Exit");
@@ -233,6 +239,35 @@ static void ShowInfoWindow(void)
     DrawStdFrameWithCustomTileAndPalette(sCraftInfoWindowId, TRUE, 0x214, 14);
     FillWindowPixelBuffer(sCraftInfoWindowId, PIXEL_FILL(1));
     CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
+}
+
+static void HideInfoWindow(void)
+{
+    if (sCraftInfoWindowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
+        RemoveWindow(sCraftInfoWindowId);
+        sCraftInfoWindowId = WINDOW_NONE;
+    }
+}
+
+static void HideItemInfoWindow(void)
+{
+    if (sCraftItemInfoWindowId != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrame(sCraftItemInfoWindowId, TRUE);
+        RemoveWindow(sCraftItemInfoWindowId);
+        sCraftItemInfoWindowId = WINDOW_NONE;
+    }
+}
+
+static void ShowItemInfoWindow(void)
+{
+    if (sCraftItemInfoWindowId == WINDOW_NONE)
+    {
+        sCraftItemInfoWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_ITEMINFO]);
+        UpdateItemInfoWindow();
+    }
 }
 
 static void UpdateCraftInfoWindow(void)
@@ -466,18 +501,8 @@ void CraftMenuUI_Close(void)
         RemoveWindow(sCraftGridWindowId);
         sCraftGridWindowId = WINDOW_NONE;
     }
-    ClearStdWindowAndFrame(sCraftItemInfoWindowId, TRUE);
-    if (sCraftItemInfoWindowId != WINDOW_NONE)
-    {
-        RemoveWindow(sCraftItemInfoWindowId);
-        sCraftItemInfoWindowId = WINDOW_NONE;
-    }
-    ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
-    if (sCraftInfoWindowId != WINDOW_NONE)
-    {
-        RemoveWindow(sCraftInfoWindowId);
-        sCraftInfoWindowId = WINDOW_NONE;
-    }
+    HideItemInfoWindow();
+    HideInfoWindow();
     CraftMenuUI_HideActionMenu();
 
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
@@ -502,6 +527,7 @@ void CraftMenuUI_SetCursorPos(u8 pos)
 
 void CraftMenuUI_ShowActionMenu(void)
 {
+    HideInfoWindow();
     if (sActionMenuWindowId == WINDOW_NONE)
     {
         sActionMenuWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_ACTIONS]);
@@ -528,6 +554,7 @@ void CraftMenuUI_HideActionMenu(void)
         ClearStdWindowAndFrameToTransparent(sActionMenuWindowId, TRUE);
         RemoveWindow(sActionMenuWindowId);
         sActionMenuWindowId = WINDOW_NONE;
+        CraftMenuUI_RedrawInfo();
     }
 }
 
@@ -587,12 +614,7 @@ void CraftMenuUI_PrintInfo(const u8 *text, u8 x, u8 y)
 
 void CraftMenuUI_DisplayMessage(u8 taskId, const u8 *text, TaskFunc nextTask)
 {
-    if (sCraftInfoWindowId != WINDOW_NONE)
-    {
-        ClearStdWindowAndFrame(sCraftInfoWindowId, TRUE);
-        RemoveWindow(sCraftInfoWindowId);
-        sCraftInfoWindowId = WINDOW_NONE;
-    }
+    HideInfoWindow();
 
     sCraftMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_MESSAGE]);
     LoadMessageBoxAndBorderGfx();
@@ -623,6 +645,8 @@ void CraftMenuUI_ClearMessage(void)
         ShowInfoWindow();
         UpdateCraftInfoWindow();
     }
+
+    ShowItemInfoWindow();
 }
 
 void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
@@ -642,11 +666,13 @@ void CraftMenuUI_ClearPackUpMessage(void)
 
 void CraftMenuUI_DisplayNoItemsMessage(u8 taskId, TaskFunc nextTask)
 {
+    HideItemInfoWindow();
     CraftMenuUI_DisplayMessage(taskId, gText_CraftNoItems, nextTask);
 }
 
 void CraftMenuUI_DisplayInvalidMessage(u8 taskId, TaskFunc nextTask)
 {
+    HideItemInfoWindow();
     CraftMenuUI_DisplayMessage(taskId, gText_CraftInvalid, nextTask);
 }
 
@@ -655,6 +681,7 @@ void CraftMenuUI_DisplayCraftConfirmMessage(u8 taskId, u16 itemId, u16 quantity,
     ConvertIntToDecimalStringN(gStringVar1, quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
     CopyItemNameHandlePlural(itemId, gStringVar2, quantity);
     StringExpandPlaceholders(gStringVar4, gText_CraftConfirm);
+    HideItemInfoWindow();
     CraftMenuUI_DisplayMessage(taskId, gStringVar4, nextTask);
 }
 
@@ -669,6 +696,7 @@ u8 CraftMenuUI_AddQuantityWindow(void)
 {
     if (sQuantityWindowId == WINDOW_NONE)
     {
+        HideItemInfoWindow();
         sQuantityWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_QUANTITY]);
         ShowQuantityWindow();
     }
@@ -693,6 +721,7 @@ void CraftMenuUI_RemoveQuantityWindow(void)
         ClearStdWindowAndFrameToTransparent(sQuantityWindowId, TRUE);
         RemoveWindow(sQuantityWindowId);
         sQuantityWindowId = WINDOW_NONE;
+        ShowItemInfoWindow();
     }
 }
 
