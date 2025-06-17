@@ -727,24 +727,11 @@ void CraftMenuUI_RemoveQuantityWindow(void)
     }
 }
 
-void CraftMenuUI_ShowQuantityPrompt(u16 itemId, u16 quantity)
+void CraftMenuUI_DisplayQuantityPrompt(u8 taskId, u16 itemId, TaskFunc nextTask)
 {
-    HideInfoWindow();
-
-    if (sCraftMessageWindowId == WINDOW_NONE)
-    {
-        sCraftMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_MESSAGE]);
-        LoadMessageBoxAndBorderGfx();
-    }
-
     CopyItemNameHandlePlural(itemId, gStringVar1, 2);
     StringExpandPlaceholders(gStringVar4, sText_CraftPlaceHowManyVar1);
-    FillWindowPixelBuffer(sCraftMessageWindowId, PIXEL_FILL(1));
-    AddTextPrinterParameterized(sCraftMessageWindowId, FONT_NORMAL, gStringVar4, 0, 1, 0, NULL);
-    CopyWindowToVram(sCraftMessageWindowId, COPYWIN_FULL);
-
-    CraftMenuUI_AddQuantityWindow();
-    CraftMenuUI_PrintQuantity(quantity);
+    CraftMenuUI_DisplayMessage(taskId, gStringVar4, nextTask);
 }
 
 void CraftMenuUI_UpdateQuantityPrompt(u16 quantity)
