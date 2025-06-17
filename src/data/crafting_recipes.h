@@ -15,38 +15,45 @@ struct CraftRecipeList
     u8 count;
 };
 
-static const struct CraftRecipe sAntidoteRecipes[] =
-{
-    {
-        .pattern = {
-            { ITEM_POTION },
-            { ITEM_PECHA_BERRY },
-        },
-        .resultQuantity = 3,
-    },
-};
-
-static const struct CraftRecipe sSuperPotionRecipes[] =
-{
-    {
-        .pattern = {
-            { ITEM_POTION, ITEM_POTION, ITEM_POTION },
-        },
-        .resultQuantity = 2,
-    },
-    {
-        .pattern = {
-            { ITEM_ORAN_BERRY, ITEM_ORAN_BERRY },
-            { ITEM_FRESH_WATER },
-        },
-        .resultQuantity = 2,
-    },
-};
-
 static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
 {
-    [ITEM_ANTIDOTE] = { sAntidoteRecipes, ARRAY_COUNT(sAntidoteRecipes) },
-    [ITEM_SUPER_POTION] = { sSuperPotionRecipes, ARRAY_COUNT(sSuperPotionRecipes) },
+    [ITEM_ANTIDOTE] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_POTION },
+                    { ITEM_PECHA_BERRY },
+                },
+                .resultQuantity = 3,
+            },
+        },
+        .count = 1,
+    },
+    [ITEM_SUPER_POTION] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_POTION, ITEM_POTION, ITEM_POTION },
+                },
+                .resultQuantity = 2,
+            },
+            {
+                .pattern =
+                {
+                    { ITEM_ORAN_BERRY, ITEM_ORAN_BERRY },
+                    { ITEM_FRESH_WATER },
+                },
+                .resultQuantity = 2,
+            },
+        },
+        .count = 2,
+    },
 };
 
 static const u16 gCraftRecipeCount = ARRAY_COUNT(gCraftRecipes);
