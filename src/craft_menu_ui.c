@@ -323,6 +323,7 @@ static void CreateWorkbenchSprite(void)
     for (i = 0; i < CRAFT_SLOT_COUNT; i++)
         LoadCompressedSpriteSheet(&sWorkbenchSheets[i]);
     LoadSpritePalette(&sWorkbenchPalette);
+    UpdateSpritePaletteWithTime(IndexOfSpritePaletteTag(TAG_WB_PALETTE));
 
     const s16 xBase = WB_CENTER_X - 32;
     const s16 yBase = WB_CENTER_Y - 32;
@@ -398,6 +399,7 @@ void CraftMenuUI_DrawIcons(void)
                     spriteId = AddItemIconSprite(newTag, newTag, gCraftSlots[row][col].itemId);
                     if (spriteId != MAX_SPRITES)
                     {
+                        UpdateSpritePaletteWithTime(IndexOfSpritePaletteTag(newTag));
                         gSprites[spriteId].x = sWorkbenchSlotPositions[index].x + 79;
                         gSprites[spriteId].y = sWorkbenchSlotPositions[index].y + 28;
                         gSprites[spriteId].oam.priority = 0;

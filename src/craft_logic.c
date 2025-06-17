@@ -72,15 +72,34 @@ static u16 TryCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int b
     {
         for (c = 0; c < patCols; c++)
         {
+            struct ItemSlot *slot = &slots[baseRow + r][baseCol + c];
             u16 itemId = recipe->pattern[r][c];
+
             if (itemId != ITEM_NONE)
             {
-                struct ItemSlot *slot = &slots[baseRow + r][baseCol + c];
                 if (slot->itemId != itemId || slot->quantity == 0)
                     return 0;
                 if (slot->quantity < minQty)
                     minQty = slot->quantity;
             }
+            else if (slot->itemId != ITEM_NONE)
+            {
+                // Slot contains an item but the recipe expects it to be empty
+                return 0;
+            }
+        }
+    }
+
+    // Ensure all remaining slots on the workbench are empty
+    for (r = 0; r < CRAFT_ROWS; r++)
+    {
+        for (c = 0; c < CRAFT_COLS; c++)
+        {
+            if (r >= baseRow && r < baseRow + patRows && c >= baseCol && c < baseCol + patCols)
+                continue;
+
+            if (slots[r][c].itemId != ITEM_NONE)
+                return 0;
         }
     }
 
