@@ -2,6 +2,7 @@
 #include "constants/items.h"
 #include "craft_logic.h"
 #include "data/crafting_recipes.h"
+#include "event_data.h"
 
 EWRAM_DATA struct ItemSlot gCraftSlots[CRAFT_ROWS][CRAFT_COLS];
 EWRAM_DATA u8 gCraftActiveSlot = 0;
@@ -173,6 +174,8 @@ const struct CraftRecipe *CraftLogic_GetMatchingRecipe(const struct CraftRecipeL
         for (r = 0; r < list->count; r++)
         {
             const struct CraftRecipe *recipe = &list->recipes[r];
+            if (recipe->unlockFlag != 0 && !FlagGet(recipe->unlockFlag))
+                continue;
             int patRows, patCols;
 
             GetRecipeDimensions(recipe, &patRows, &patCols);
@@ -204,6 +207,9 @@ u16 CraftLogic_GetCraftableQuantity(const struct CraftRecipe *recipe)
     struct ItemSlot temp[CRAFT_ROWS][CRAFT_COLS];
     int patRows, patCols;
     u16 crafted = 0;
+
+    if (recipe->unlockFlag != 0 && !FlagGet(recipe->unlockFlag))
+        return 0;
 
     memcpy(temp, gCraftSlots, sizeof(temp));
     GetRecipeDimensions(recipe, &patRows, &patCols);
