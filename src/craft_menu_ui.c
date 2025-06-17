@@ -22,6 +22,7 @@
 #include "constants/songs.h"
 #include "constants/items.h"
 #include "craft_logic.h"
+#include "data/crafting_recipes.h"
 #include "craft_menu_ui.h"
 
 #define TAG_WB_TOPLEFT     0x4001
@@ -225,7 +226,8 @@ static void UpdateCraftInfoWindow(void)
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 2, 7, sInputTextColor, 0, sText_CraftingUi_AButton);
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_SMALL, 13, 2, sInputTextColor, 0, sText_CraftingUi_AddItem);
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 45, 7, sInputTextColor, 0, sText_CraftingUi_BButtonExit);
-    AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 85, 7, sHintTextColor, 0, sText_CraftingUi_StartButtonCraft);
+    const u8 *startColor = CraftLogic_CanCraft(gCraftRecipes, gCraftRecipeCount) ? sHintTextColor : sInputTextColor;
+    AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 85, 7, startColor, 0, sText_CraftingUi_StartButtonCraft);
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, 148, 7, sInputTextColor, 0, sText_CraftingUi_SelectButton);
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_SMALL, 175, 2, sInputTextColor, 0, sText_CraftingUi_RecipeBook);
 }
@@ -378,6 +380,8 @@ void CraftMenuUI_DrawIcons(void)
     }
 
     UpdateItemInfoWindow();
+    UpdateCraftInfoWindow();
+    CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
 }
 
 void CraftMenuUI_UpdateGrid(void)
