@@ -36,7 +36,9 @@ static void Task_ShowPackUpYesNo(u8 taskId);
 static void PackUpYes(u8 taskId);
 static void PackUpNo(u8 taskId);
 static bool8 CraftMenu_HasItemsOnTable(void);
-static void Task_AdjustQuantity(u8 taskId);
+static void Task_AdjustQuantity_Start(u8 taskId);
+static void Task_AdjustQuantity_Init(u8 taskId);
+static void Task_AdjustQuantity_HandleInput(u8 taskId);
 static void CraftMenu_ReshowAfterBagMenu(void);
 static void Task_WaitForCraftMessageAck(u8 taskId);
 static void Task_NoCraftItems(u8 taskId);
@@ -295,7 +297,7 @@ static void Action_StartSwapSlot(void)
 
 static void Action_AdjustQuantity(void)
 {
-    CreateTask(Task_AdjustQuantity, 0);
+    CreateTask(Task_AdjustQuantity_Start, 0);
 }
 
 static bool8 HandleSlotActionInput(void)
@@ -360,55 +362,59 @@ static bool8 HandleSwapSlotInput(void)
     return FALSE;
 }
 
-static void Task_AdjustQuantity(u8 taskId)
-{
-    static u16 sOldQty;
-    static u16 sMaxQty;
-    static u16 sItemId;
-    switch (gTasks[taskId].data[0])
-    {
-    case 0:
-        {
-            int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
-            int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
-            sItemId = gCraftSlots[row][col].itemId;
-            sOldQty = gCraftSlots[row][col].quantity;
-        }
-        sMaxQty = sOldQty + CountTotalItemQuantityInBag(sItemId);
-        gTasks[taskId].data[1] = sOldQty;
-        gMenuCallback = NULL;
-        CraftMenuUI_ShowQuantityPrompt(sItemId, sOldQty);
-        gTasks[taskId].data[0] = 1;
-        break;
-    case 1:
-        if (AdjustQuantityAccordingToDPadInput(&gTasks[taskId].data[1], sMaxQty))
-        {
-            CraftMenuUI_UpdateQuantityPrompt(gTasks[taskId].data[1]);
-        }
+static u16 sAdjustOldQty;
+static u16 sAdjustMaxQty;
+static u16 sAdjustItemId;
 
-        if (JOY_NEW(A_BUTTON))
-        {
-            u16 newQty = gTasks[taskId].data[1];
-            int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
-            int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
-            if (newQty > sOldQty)
-                RemoveBagItem(sItemId, newQty - sOldQty);
-            else if (newQty < sOldQty)
-                AddBagItem(sItemId, sOldQty - newQty);
-            gCraftSlots[row][col].quantity = newQty;
-            CraftMenuUI_DrawIcons();
-            gTasks[taskId].data[0] = 2;
-        }
-        else if (JOY_NEW(B_BUTTON))
-        {
-            gTasks[taskId].data[0] = 2;
-        }
-        break;
-    case 2:
+static void Task_AdjustQuantity_Start(u8 taskId)
+{
+    int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
+    int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
+
+    sAdjustItemId = gCraftSlots[row][col].itemId;
+    sAdjustOldQty = gCraftSlots[row][col].quantity;
+    sAdjustMaxQty = sAdjustOldQty + CountTotalItemQuantityInBag(sAdjustItemId);
+
+    gTasks[taskId].data[0] = sAdjustOldQty;
+    gMenuCallback = NULL;
+
+    CraftMenuUI_DisplayQuantityPrompt(taskId, sAdjustItemId, Task_AdjustQuantity_Init);
+}
+
+static void Task_AdjustQuantity_Init(u8 taskId)
+{
+    CraftMenuUI_AddQuantityWindow();
+    CraftMenuUI_PrintQuantity(gTasks[taskId].data[0]);
+    gTasks[taskId].func = Task_AdjustQuantity_HandleInput;
+}
+
+static void Task_AdjustQuantity_HandleInput(u8 taskId)
+{
+    if (AdjustQuantityAccordingToDPadInput(&gTasks[taskId].data[0], sAdjustMaxQty))
+        CraftMenuUI_UpdateQuantityPrompt(gTasks[taskId].data[0]);
+
+    if (JOY_NEW(A_BUTTON))
+    {
+        u16 newQty = gTasks[taskId].data[0];
+        int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
+        int col = CRAFT_SLOT_COL(CraftMenuUI_GetCursorPos());
+
+        if (newQty > sAdjustOldQty)
+            RemoveBagItem(sAdjustItemId, newQty - sAdjustOldQty);
+        else if (newQty < sAdjustOldQty)
+            AddBagItem(sAdjustItemId, sAdjustOldQty - newQty);
+
+        gCraftSlots[row][col].quantity = newQty;
+        CraftMenuUI_DrawIcons();
         CraftMenuUI_HideQuantityPrompt();
         gMenuCallback = HandleCraftMenuInput;
         DestroyTask(taskId);
-        break;
+    }
+    else if (JOY_NEW(B_BUTTON))
+    {
+        CraftMenuUI_HideQuantityPrompt();
+        gMenuCallback = HandleCraftMenuInput;
+        DestroyTask(taskId);
     }
 }
 
