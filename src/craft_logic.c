@@ -62,8 +62,8 @@ static void GetRecipeDimensions(const struct CraftRecipe *recipe, int *rows, int
     *cols = maxCol + 1;
 }
 
-static u16 TryCraftRecipeAtInternal(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols,
-                                    struct ItemSlot slots[CRAFT_ROWS][CRAFT_COLS], bool8 consume)
+static u16 TryCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols,
+                            struct ItemSlot slots[CRAFT_ROWS][CRAFT_COLS], bool8 consume)
 {
     int r, c;
     u16 minQty = 0xFFFF;
@@ -107,10 +107,6 @@ static u16 TryCraftRecipeAtInternal(const struct CraftRecipe *recipe, int baseRo
     return minQty;
 }
 
-static u16 TryCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols)
-{
-    return TryCraftRecipeAtInternal(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, TRUE);
-}
 
 static u16 ApplyRecipe(u16 resultItemId, const struct CraftRecipe *recipe)
 {
@@ -132,7 +128,7 @@ static u16 ApplyRecipe(u16 resultItemId, const struct CraftRecipe *recipe)
         {
             for (baseCol = 0; baseCol <= CRAFT_COLS - patCols && !progress; baseCol++)
             {
-                u16 sets = TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols);
+                u16 sets = TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, TRUE);
                 if (sets)
                 {
                     crafted += sets;
@@ -171,7 +167,7 @@ const struct CraftRecipe *CraftLogic_GetMatchingRecipe(const struct CraftRecipeL
             {
                 for (baseCol = 0; baseCol <= CRAFT_COLS - patCols; baseCol++)
                 {
-                    if (TryCraftRecipeAtInternal(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, FALSE))
+                    if (TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, FALSE))
                     {
                         if (resultItemId)
                             *resultItemId = itemId;
@@ -207,7 +203,7 @@ u16 CraftLogic_GetCraftableQuantity(const struct CraftRecipe *recipe)
         {
             for (baseCol = 0; baseCol <= CRAFT_COLS - patCols && !progress; baseCol++)
             {
-                u16 sets = TryCraftRecipeAtInternal(recipe, baseRow, baseCol, patRows, patCols, temp, TRUE);
+                u16 sets = TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, temp, TRUE);
                 if (sets)
                 {
                     crafted += sets;
@@ -233,7 +229,7 @@ u16 CraftLogic_Craft(const struct CraftRecipeList *recipes, u16 recipeCount)
 
 static bool8 CanCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols)
 {
-    return TryCraftRecipeAtInternal(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, FALSE);
+    return TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, FALSE);
 }
 
 bool8 CraftLogic_CanCraft(const struct CraftRecipeList *recipes, u16 recipeCount)
