@@ -727,21 +727,16 @@ void CraftMenuUI_RemoveQuantityWindow(void)
     }
 }
 
-void CraftMenuUI_DisplayQuantityPrompt(u8 taskId, u16 itemId, TaskFunc nextTask)
+void CraftMenuUI_DisplayAdjustQtyMessage(u8 taskId, u16 itemId, TaskFunc nextTask)
 {
     CopyItemNameHandlePlural(itemId, gStringVar1, 2);
     StringExpandPlaceholders(gStringVar4, sText_CraftPlaceHowManyVar1);
+    HideItemInfoWindow();
     CraftMenuUI_DisplayMessage(taskId, gStringVar4, nextTask);
 }
 
-void CraftMenuUI_UpdateQuantityPrompt(u16 quantity)
+void CraftMenuUI_ClearAdjustQtyMessage(void)
 {
-    CraftMenuUI_PrintQuantity(quantity);
-}
-
-void CraftMenuUI_HideQuantityPrompt(void)
-{
-    CraftMenuUI_RemoveQuantityWindow();
     CraftMenuUI_ClearMessage();
 }
 
