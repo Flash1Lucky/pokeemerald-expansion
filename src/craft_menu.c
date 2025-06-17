@@ -378,7 +378,7 @@ static void Task_AdjustQuantity_Start(u8 taskId)
     gTasks[taskId].data[0] = sAdjustOldQty;
     gMenuCallback = NULL;
 
-    CraftMenuUI_DisplayQuantityPrompt(taskId, sAdjustItemId, Task_AdjustQuantity_Init);
+    CraftMenuUI_DisplayAdjustQtyMessage(taskId, sAdjustItemId, Task_AdjustQuantity_Init);
 }
 
 static void Task_AdjustQuantity_Init(u8 taskId)
@@ -391,7 +391,7 @@ static void Task_AdjustQuantity_Init(u8 taskId)
 static void Task_AdjustQuantity_HandleInput(u8 taskId)
 {
     if (AdjustQuantityAccordingToDPadInput(&gTasks[taskId].data[0], sAdjustMaxQty))
-        CraftMenuUI_UpdateQuantityPrompt(gTasks[taskId].data[0]);
+        CraftMenuUI_PrintQuantity(gTasks[taskId].data[0]);
 
     if (JOY_NEW(A_BUTTON))
     {
@@ -406,13 +406,15 @@ static void Task_AdjustQuantity_HandleInput(u8 taskId)
 
         gCraftSlots[row][col].quantity = newQty;
         CraftMenuUI_DrawIcons();
-        CraftMenuUI_HideQuantityPrompt();
+        CraftMenuUI_RemoveQuantityWindow();
+        CraftMenuUI_ClearAdjustQtyMessage();
         gMenuCallback = HandleCraftMenuInput;
         DestroyTask(taskId);
     }
     else if (JOY_NEW(B_BUTTON))
     {
-        CraftMenuUI_HideQuantityPrompt();
+        CraftMenuUI_RemoveQuantityWindow();
+        CraftMenuUI_ClearAdjustQtyMessage();
         gMenuCallback = HandleCraftMenuInput;
         DestroyTask(taskId);
     }
