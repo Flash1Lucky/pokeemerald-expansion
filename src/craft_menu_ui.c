@@ -45,6 +45,7 @@ enum
 {
     WINDOW_CRAFT_GRID,
     WINDOW_CRAFT_INFO,
+    WINDOW_CRAFT_MESSAGE,
     WINDOW_CRAFT_YESNO,
     WINDOW_CRAFT_ACTIONS,
     WINDOW_CRAFT_ITEMINFO,
@@ -113,6 +114,15 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
         .tilemapLeft = 2,
         .tilemapTop = 15,
         .width = 26,
+        .height = 4,
+        .paletteNum = 15,
+        .baseBlock = 145
+    },
+    [WINDOW_CRAFT_MESSAGE] = {
+        .bg = 0,
+        .tilemapLeft = 3,
+        .tilemapTop = 15,
+        .width = 25,
         .height = 4,
         .paletteNum = 15,
         .baseBlock = 145
@@ -580,7 +590,7 @@ void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
         sCraftInfoWindowId = WINDOW_NONE;
     }
 
-    sPackUpMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_INFO]);
+    sPackUpMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_MESSAGE]);
     LoadMessageBoxAndBorderGfx();
     StringExpandPlaceholders(gStringVar4, gText_PackUpQuestion);
     DisplayMessageAndContinueTask(taskId, sPackUpMessageWindowId, DLG_WINDOW_BASE_TILE_NUM,
