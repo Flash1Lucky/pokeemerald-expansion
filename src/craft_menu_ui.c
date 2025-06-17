@@ -56,7 +56,7 @@ enum
 EWRAM_DATA static u8 sCraftGridWindowId = 0;
 EWRAM_DATA static u8 sCraftItemInfoWindowId = 0;
 EWRAM_DATA static u8 sCraftInfoWindowId = 0;
-EWRAM_DATA static u8 sPackUpMessageWindowId = 0;
+EWRAM_DATA static u8 sCraftMessageWindowId = 0;
 EWRAM_DATA static u8 sWorkbenchSpriteIds[CRAFT_SLOT_COUNT];
 EWRAM_DATA static u8 sCraftCursorPos = 0;
 EWRAM_DATA static u8 sCraftSlotSpriteIds[CRAFT_SLOT_COUNT];
@@ -79,6 +79,10 @@ const u8 gText_CraftSwapSlot[] = _("Swap Slot");
 const u8 gText_CraftPackItem[] = _("Pack Item");
 
 const u8 gText_PackUpQuestion[] = _("Would you like to pack up?");
+
+const u8 gText_CraftNoItems[] = _("Place items on the workbench to\nbegin crafting.");
+const u8 gText_CraftInvalid[] = _("This won't make anything helpful...");
+const u8 gText_CraftConfirm[] = _("Would you like to craft\n{STR_VAR_1} {STR_VAR_2}?");
 
 static const u8 sGridTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY};
 static const u8 sInputTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
@@ -581,7 +585,7 @@ void CraftMenuUI_PrintInfo(const u8 *text, u8 x, u8 y)
     CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
 }
 
-void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
+void CraftMenuUI_DisplayMessage(u8 taskId, const u8 *text, TaskFunc nextTask)
 {
     if (sCraftInfoWindowId != WINDOW_NONE)
     {
@@ -590,27 +594,27 @@ void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
         sCraftInfoWindowId = WINDOW_NONE;
     }
 
-    sPackUpMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_MESSAGE]);
+    sCraftMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_MESSAGE]);
     LoadMessageBoxAndBorderGfx();
-    StringExpandPlaceholders(gStringVar4, gText_PackUpQuestion);
-    DisplayMessageAndContinueTask(taskId, sPackUpMessageWindowId, DLG_WINDOW_BASE_TILE_NUM,
+    StringExpandPlaceholders(gStringVar4, text);
+    DisplayMessageAndContinueTask(taskId, sCraftMessageWindowId, DLG_WINDOW_BASE_TILE_NUM,
                                   DLG_WINDOW_PALETTE_NUM, FONT_NORMAL, GetPlayerTextSpeedDelay(),
                                   gStringVar4, nextTask);
-    CopyWindowToVram(sPackUpMessageWindowId, COPYWIN_FULL);
+    CopyWindowToVram(sCraftMessageWindowId, COPYWIN_FULL);
 }
 
-void CraftMenuUI_ShowPackUpYesNo(void)
+void CraftMenuUI_ShowYesNo(void)
 {
     CreateYesNoMenu(&sCraftWindowTemplates[WINDOW_CRAFT_YESNO], STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 0);
 }
 
-void CraftMenuUI_ClearPackUpMessage(void)
+void CraftMenuUI_ClearMessage(void)
 {
-    if (sPackUpMessageWindowId != WINDOW_NONE)
+    if (sCraftMessageWindowId != WINDOW_NONE)
     {
-        ClearDialogWindowAndFrame(sPackUpMessageWindowId, TRUE);
-        RemoveWindow(sPackUpMessageWindowId);
-        sPackUpMessageWindowId = WINDOW_NONE;
+        ClearDialogWindowAndFrame(sCraftMessageWindowId, TRUE);
+        RemoveWindow(sCraftMessageWindowId);
+        sCraftMessageWindowId = WINDOW_NONE;
     }
 
     if (sCraftInfoWindowId == WINDOW_NONE)
@@ -619,6 +623,39 @@ void CraftMenuUI_ClearPackUpMessage(void)
         ShowInfoWindow();
         UpdateCraftInfoWindow();
     }
+}
+
+void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask)
+{
+    CraftMenuUI_DisplayMessage(taskId, gText_PackUpQuestion, nextTask);
+}
+
+void CraftMenuUI_ShowPackUpYesNo(void)
+{
+    CraftMenuUI_ShowYesNo();
+}
+
+void CraftMenuUI_ClearPackUpMessage(void)
+{
+    CraftMenuUI_ClearMessage();
+}
+
+void CraftMenuUI_DisplayNoItemsMessage(u8 taskId, TaskFunc nextTask)
+{
+    CraftMenuUI_DisplayMessage(taskId, gText_CraftNoItems, nextTask);
+}
+
+void CraftMenuUI_DisplayInvalidMessage(u8 taskId, TaskFunc nextTask)
+{
+    CraftMenuUI_DisplayMessage(taskId, gText_CraftInvalid, nextTask);
+}
+
+void CraftMenuUI_DisplayCraftConfirmMessage(u8 taskId, u16 itemId, u16 quantity, TaskFunc nextTask)
+{
+    ConvertIntToDecimalStringN(gStringVar1, quantity, STR_CONV_MODE_LEFT_ALIGN, 3);
+    CopyItemNameHandlePlural(itemId, gStringVar2, quantity);
+    StringExpandPlaceholders(gStringVar4, gText_CraftConfirm);
+    CraftMenuUI_DisplayMessage(taskId, gStringVar4, nextTask);
 }
 
 static void ShowQuantityWindow(void)

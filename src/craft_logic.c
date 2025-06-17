@@ -226,11 +226,6 @@ u16 CraftLogic_Craft(const struct CraftRecipeList *recipes, u16 recipeCount)
     return 0;
 }
 
-static bool8 CanCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols)
-{
-    return TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, FALSE);
-}
-
 bool8 CraftLogic_CanCraft(const struct CraftRecipeList *recipes, u16 recipeCount)
 {
     u16 itemId;
