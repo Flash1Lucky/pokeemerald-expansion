@@ -177,6 +177,10 @@ static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
     }
 };
 
+//---------------------------------------------------------------------------
+// Window setup and teardown
+//---------------------------------------------------------------------------
+
 static const struct CompressedSpriteSheet sWorkbenchSheets[] =
 {
     { gCraftWorkbench_TopLeft_Gfx,  0x400, TAG_WB_TOPLEFT },
@@ -315,6 +319,10 @@ static void UpdateItemInfoWindow(void)
         ClearStdWindowAndFrameToTransparent(sCraftItemInfoWindowId, TRUE);
     }
 }
+
+//---------------------------------------------------------------------------
+// Cursor and grid updates
+//---------------------------------------------------------------------------
 
 
 static void CreateWorkbenchSprite(void)
@@ -536,6 +544,10 @@ void CraftMenuUI_SetCursorPos(u8 pos)
     CraftMenuUI_UpdateGrid();
 }
 
+//---------------------------------------------------------------------------
+// Action menu and quantity helpers
+//---------------------------------------------------------------------------
+
 void CraftMenuUI_ShowActionMenu(void)
 {
     HideInfoWindow();
@@ -623,6 +635,10 @@ void CraftMenuUI_PrintInfo(const u8 *text, u8 x, u8 y)
     AddTextPrinterParameterized3(sCraftInfoWindowId, FONT_NORMAL, x, y, sInputTextColor, 0, text);
     CopyWindowToVram(sCraftInfoWindowId, COPYWIN_FULL);
 }
+
+//---------------------------------------------------------------------------
+// Message boxes and confirmation prompts
+//---------------------------------------------------------------------------
 
 void CraftMenuUI_DisplayMessage(u8 taskId, const u8 *text, TaskFunc nextTask)
 {

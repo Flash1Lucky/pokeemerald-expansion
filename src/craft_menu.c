@@ -49,6 +49,10 @@ static void CraftYes(u8 taskId);
 static void CraftNo(u8 taskId);
 void CB2_ReturnToCraftMenu(void);
 
+//---------------------------------------------------------------------------
+// Entry points
+//---------------------------------------------------------------------------
+
 void StartCraftMenu(void)
 {
     PlayerFreeze();
@@ -70,6 +74,10 @@ static void Task_RunCraftMenu(u8 taskId)
     if (gMenuCallback && gMenuCallback() == TRUE)
         DestroyTask(taskId);
 }
+
+//---------------------------------------------------------------------------
+// Menu workflow and state
+//---------------------------------------------------------------------------
 
 static bool8 sKeepSlots = FALSE;
 
@@ -97,6 +105,18 @@ void CB2_ReturnToCraftMenu(void)
 {
     gFieldCallback = CraftMenu_ReshowAfterBagMenu;
     SetMainCallback2(CB2_ReturnToField);
+}
+void CB2_OpenCraftMenu(void)
+{
+    StartCraftMenu();
+    SetMainCallback2(CB2_Overworld);
+}
+
+static void CraftMenu_ReshowAfterBagMenu(void)
+{
+    sKeepSlots = TRUE;
+    StartCraftMenu();
+    FadeInFromBlack();
 }
 
 static void Task_WaitFadeAndOpenBag(u8 taskId)
@@ -127,6 +147,10 @@ static void OpenBagFromCraftMenu(void)
     FadeScreen(FADE_TO_BLACK, 0);
     CreateTask(Task_WaitFadeAndOpenBag, 0);
 }
+
+//---------------------------------------------------------------------------
+// Input handlers
+//---------------------------------------------------------------------------
 
 static bool8 HandleCraftMenuInput(void)
 {
@@ -273,6 +297,10 @@ static void PackUpNo(u8 taskId)
     DestroyTask(taskId);
 }
 
+//---------------------------------------------------------------------------
+// Slot and swap actions
+//---------------------------------------------------------------------------
+
 static void Action_SwapItem(void)
 {
     OpenBagFromCraftMenu();
@@ -373,6 +401,10 @@ static u16 sAdjustOldQty;
 static u16 sAdjustMaxQty;
 static u16 sAdjustItemId;
 
+//---------------------------------------------------------------------------
+// Quantity adjustment tasks
+//---------------------------------------------------------------------------
+
 static void Task_AdjustQuantity_Start(u8 taskId)
 {
     int row = CRAFT_SLOT_ROW(CraftMenuUI_GetCursorPos());
@@ -432,6 +464,10 @@ static const struct YesNoFuncTable sPackUpYesNoFuncs = {
     .noFunc = PackUpNo,
 };
 
+//---------------------------------------------------------------------------
+// Pack-up and confirmation tasks
+//---------------------------------------------------------------------------
+
 static void Task_ShowPackUpYesNo(u8 taskId)
 {
     CraftMenuUI_ShowPackUpYesNo();
@@ -443,18 +479,6 @@ static void Task_PackUpAsk(u8 taskId)
     CraftMenuUI_DisplayPackUpMessage(taskId, Task_ShowPackUpYesNo);
 }
 
-void CB2_OpenCraftMenu(void)
-{
-    StartCraftMenu();
-    SetMainCallback2(CB2_Overworld);
-}
-
-static void CraftMenu_ReshowAfterBagMenu(void)
-{
-    sKeepSlots = TRUE;
-    StartCraftMenu();
-    FadeInFromBlack();
-}
 
 static void Task_WaitForCraftMessageAck(u8 taskId)
 {
@@ -466,6 +490,10 @@ static void Task_WaitForCraftMessageAck(u8 taskId)
         DestroyTask(taskId);
     }
 }
+
+//---------------------------------------------------------------------------
+// Crafting confirmation flow
+//---------------------------------------------------------------------------
 
 static void Task_NoCraftItems(u8 taskId)
 {

@@ -10,8 +10,16 @@
 #define CRAFT_SLOT_ROW(slot) ((slot) / CRAFT_COLS)
 #define CRAFT_SLOT_COL(slot) ((slot) % CRAFT_COLS)
 
-extern struct ItemSlot gCraftSlots[CRAFT_ROWS][CRAFT_COLS];
-extern u8 gCraftActiveSlot;
+struct CraftMenuState
+{
+    struct ItemSlot slots[CRAFT_ROWS][CRAFT_COLS];
+    u8 activeSlot;
+};
+
+extern struct CraftMenuState gCraftState;
+
+#define gCraftSlots      (gCraftState.slots)
+#define gCraftActiveSlot (gCraftState.activeSlot)
 
 void CraftLogic_InitSlots(void);
 void CraftLogic_SetSlot(u8 slot, u16 itemId, u16 quantity);
