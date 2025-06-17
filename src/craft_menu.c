@@ -47,7 +47,7 @@ static void CraftYes(u8 taskId);
 static void CraftNo(u8 taskId);
 void CB2_ReturnToCraftMenu(void);
 
-static const u8 sText_CraftPlaceHowManyVar1[] = _("Place how many {STR_VAR_1}?");
+extern const u8 sText_CraftPlaceHowManyVar1[];
 
 void StartCraftMenu(void)
 {
