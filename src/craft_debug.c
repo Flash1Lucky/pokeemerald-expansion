@@ -11,6 +11,7 @@
 #include "main.h"
 #include "menu.h"
 #include "craft_logic.h"
+#include "data/crafting_recipes.h"
 #include "craft_menu.h"
 #include "craft_debug.h"
 #include "constants/rgb.h"
@@ -21,6 +22,7 @@ static const u8 sText_DebugMenuTitle[] = _("Crafting Debug Menu");
 static const u8 sText_SlotLabel[] = _("Slot ");
 static const u8 sText_ColonSpace[] = _(": ");
 static const u8 sText_None[] = _("None");
+static const u8 sText_ResultLabel[] = _("Result: ");
 
 static const u16 sBgColor[] = { RGB_WHITE };
 
@@ -166,6 +168,32 @@ static void PrintSlots(u8 windowId)
 
             AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, lineBuffer);
         }
+    }
+
+    {
+        u16 resultItem;
+        const struct CraftRecipe *recipe = CraftLogic_GetMatchingRecipe(gCraftRecipes, gCraftRecipeCount, &resultItem);
+        u8 lineBuffer[64];
+        u8 itemName[32];
+        u8 qtyBuffer[16];
+        u8 y = index * 12;
+
+        StringCopy(lineBuffer, sText_ResultLabel);
+        if (recipe != NULL)
+        {
+            u16 qty = CraftLogic_GetCraftableQuantity(recipe);
+            CopyItemName(resultItem, itemName);
+            StringAppend(lineBuffer, itemName);
+            ConvertIntToDecimalStringN(gStringVar1, qty, STR_CONV_MODE_LEFT_ALIGN, 3);
+            StringExpandPlaceholders(qtyBuffer, gText_xVar1);
+            StringAppend(lineBuffer, qtyBuffer);
+        }
+        else
+        {
+            StringAppend(lineBuffer, sText_None);
+        }
+
+        AddTextPrinterParameterized3(windowId, FONT_SMALL, 1, y, sDebugTextColor, 0, lineBuffer);
     }
 
     CopyWindowToVram(windowId, COPYWIN_FULL);
