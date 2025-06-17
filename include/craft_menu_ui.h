@@ -35,5 +35,8 @@ void CraftMenuUI_PrintInfo(const u8 *text, u8 x, u8 y);
 u8 CraftMenuUI_AddQuantityWindow(void);
 void CraftMenuUI_PrintQuantity(u16 quantity);
 void CraftMenuUI_RemoveQuantityWindow(void);
+void CraftMenuUI_ShowQuantityPrompt(u16 itemId, u16 quantity);
+void CraftMenuUI_UpdateQuantityPrompt(u16 quantity);
+void CraftMenuUI_HideQuantityPrompt(void);
 
 #endif // GUARD_CRAFT_MENU_UI_H

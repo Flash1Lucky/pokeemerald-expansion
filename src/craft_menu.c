@@ -47,8 +47,6 @@ static void CraftYes(u8 taskId);
 static void CraftNo(u8 taskId);
 void CB2_ReturnToCraftMenu(void);
 
-extern const u8 sText_CraftPlaceHowManyVar1[];
-
 void StartCraftMenu(void)
 {
     PlayerFreeze();
@@ -379,17 +377,13 @@ static void Task_AdjustQuantity(u8 taskId)
         sMaxQty = sOldQty + CountTotalItemQuantityInBag(sItemId);
         gTasks[taskId].data[1] = sOldQty;
         gMenuCallback = NULL;
-        CopyItemNameHandlePlural(sItemId, gStringVar1, 2);
-        StringExpandPlaceholders(gStringVar4, sText_CraftPlaceHowManyVar1);
-        CraftMenuUI_PrintInfo(gStringVar4, 2, 7);
-        CraftMenuUI_AddQuantityWindow();
-        CraftMenuUI_PrintQuantity(sOldQty);
+        CraftMenuUI_ShowQuantityPrompt(sItemId, sOldQty);
         gTasks[taskId].data[0] = 1;
         break;
     case 1:
         if (AdjustQuantityAccordingToDPadInput(&gTasks[taskId].data[1], sMaxQty))
         {
-            CraftMenuUI_PrintQuantity(gTasks[taskId].data[1]);
+            CraftMenuUI_UpdateQuantityPrompt(gTasks[taskId].data[1]);
         }
 
         if (JOY_NEW(A_BUTTON))
@@ -411,8 +405,7 @@ static void Task_AdjustQuantity(u8 taskId)
         }
         break;
     case 2:
-        CraftMenuUI_RemoveQuantityWindow();
-        CraftMenuUI_RedrawInfo();
+        CraftMenuUI_HideQuantityPrompt();
         gMenuCallback = HandleCraftMenuInput;
         DestroyTask(taskId);
         break;
