@@ -311,24 +311,28 @@ static bool8 HandleSlotActionInput(void)
     {
     case SLOT_ACTION_SWAP_ITEM:
         CraftMenuUI_HideActionMenu();
+        CraftMenuUI_RedrawInfo();
         Action_SwapItem();
         return TRUE;
     case SLOT_ACTION_ADJUST_QTY:
-        CraftMenuUI_HideActionMenuNoRedraw();
+        CraftMenuUI_HideActionMenu();
         Action_AdjustQuantity();
         gMenuCallback = NULL;
         return FALSE;
     case SLOT_ACTION_SWAP_SLOT:
         CraftMenuUI_HideActionMenu();
+        CraftMenuUI_RedrawInfo();
         Action_StartSwapSlot();
         return FALSE;
     case SLOT_ACTION_REMOVE_ITEM:
         CraftMenuUI_HideActionMenu();
+        CraftMenuUI_RedrawInfo();
         Action_RemoveItem();
         break;
     case SLOT_ACTION_CANCEL:
     default:
         CraftMenuUI_HideActionMenu();
+        CraftMenuUI_RedrawInfo();
         break;
     }
 
