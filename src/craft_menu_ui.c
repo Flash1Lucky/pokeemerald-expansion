@@ -549,15 +549,26 @@ void CraftMenuUI_ShowActionMenu(void)
     }
 }
 
-void CraftMenuUI_HideActionMenu(void)
+static void HideActionMenuInternal(bool8 redrawInfo)
 {
     if (sActionMenuWindowId != WINDOW_NONE)
     {
         ClearStdWindowAndFrameToTransparent(sActionMenuWindowId, TRUE);
         RemoveWindow(sActionMenuWindowId);
         sActionMenuWindowId = WINDOW_NONE;
-        CraftMenuUI_RedrawInfo();
+        if (redrawInfo)
+            CraftMenuUI_RedrawInfo();
     }
+}
+
+void CraftMenuUI_HideActionMenu(void)
+{
+    HideActionMenuInternal(TRUE);
+}
+
+void CraftMenuUI_HideActionMenuNoRedraw(void)
+{
+    HideActionMenuInternal(FALSE);
 }
 
 s8 CraftMenuUI_ProcessActionMenuInput(void)

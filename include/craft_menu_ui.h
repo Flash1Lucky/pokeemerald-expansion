@@ -37,5 +37,6 @@ void CraftMenuUI_PrintQuantity(u16 quantity);
 void CraftMenuUI_RemoveQuantityWindow(void);
 void CraftMenuUI_DisplayAdjustQtyMessage(u8 taskId, u16 itemId, TaskFunc nextTask);
 void CraftMenuUI_ClearAdjustQtyMessage(void);
+void CraftMenuUI_HideActionMenuNoRedraw(void);
 
 #endif // GUARD_CRAFT_MENU_UI_H
