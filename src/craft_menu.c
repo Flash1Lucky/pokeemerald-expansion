@@ -414,8 +414,8 @@ static void Task_AdjustQuantity_HandleInput(u8 taskId)
             AddBagItem(sAdjustItemId, sAdjustOldQty - newQty);
 
         gCraftSlots[row][col].quantity = newQty;
-        CraftMenuUI_DrawIcons();
         CraftMenuUI_RemoveQuantityWindow();
+        CraftMenuUI_DrawIcons();
         CraftMenuUI_ClearAdjustQtyMessage();
         gMenuCallback = HandleCraftMenuInput;
         DestroyTask(taskId);
