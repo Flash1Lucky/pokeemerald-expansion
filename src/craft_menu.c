@@ -11,6 +11,7 @@
 #include "event_object_lock.h"
 #include "craft_menu_ui.h"
 #include "craft_logic.h"
+#include "data/crafting_recipes.h"
 #include "item.h"
 #include "item_menu.h"
 #include "strings.h"
@@ -169,6 +170,13 @@ static bool8 HandleCraftMenuInput(void)
         return TRUE;
     }
 #endif
+
+    if (JOY_NEW(START_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        if (CraftLogic_Craft(gCraftRecipes, gCraftRecipeCount))
+            CraftMenuUI_DrawIcons();
+    }
 
     if (CraftMenuUI_HandleDpadInput())
     {
