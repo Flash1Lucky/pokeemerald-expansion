@@ -1,6 +1,7 @@
 #include "global.h"
 #include "constants/items.h"
 #include "craft_logic.h"
+#include "data/crafting_recipes.h"
 
 EWRAM_DATA struct ItemSlot gCraftSlots[CRAFT_ROWS][CRAFT_COLS];
 EWRAM_DATA u8 gCraftActiveSlot = 0;

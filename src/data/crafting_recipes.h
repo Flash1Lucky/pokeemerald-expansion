@@ -3,26 +3,26 @@
 
 #include "craft_logic.h"
 
-#ifndef ITEM_TUMBLESTONE
-#define ITEM_TUMBLESTONE ITEM_STARDUST
-#endif
+struct CraftRecipe
+{
+    u16 pattern[CRAFT_ROWS][CRAFT_COLS];
+    u16 resultItemId;
+    u16 resultQuantity;
+};
 
-#ifndef ITEM_IRON_CHUNK
-#define ITEM_IRON_CHUNK ITEM_NUGGET
-#endif
-
-static const struct CraftRecipe sPokeballRecipe = {
+static const struct CraftRecipe sRecipe_Antidote =
+{
     .pattern = {
-        { ITEM_TUMBLESTONE, ITEM_IRON_CHUNK, ITEM_NONE },
-        { ITEM_RED_APRICORN, ITEM_NONE, ITEM_NONE },
-        { ITEM_NONE, ITEM_NONE, ITEM_NONE },
+        { ITEM_POTION },
+        { ITEM_PECHA_BERRY },
     },
-    .resultItemId = ITEM_POKE_BALL,
+    .resultItemId = ITEM_ANTIDOTE,
     .resultQuantity = 3,
 };
 
-static const struct CraftRecipe gCraftRecipes[] = {
-    sPokeballRecipe,
+static const struct CraftRecipe gCraftRecipes[] =
+{
+    sRecipe_Antidote,
 };
 
 static const u16 gCraftRecipeCount = ARRAY_COUNT(gCraftRecipes);
