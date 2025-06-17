@@ -2,11 +2,13 @@
 #define GUARD_CRAFTING_RECIPES_H
 
 #include "craft_logic.h"
+#include "constants/flags.h"
 
 struct CraftRecipe
 {
     u16 pattern[CRAFT_ROWS][CRAFT_COLS];
     u16 resultQuantity;
+    u16 unlockFlag; // FLAG_NONE for always unlocked
 };
 
 struct CraftRecipeList
@@ -28,6 +30,7 @@ static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
                     { ITEM_PECHA_BERRY },
                 },
                 .resultQuantity = 3,
+                .unlockFlag = 0,
             },
         },
         .count = 1,
@@ -42,6 +45,7 @@ static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
                     { ITEM_POTION, ITEM_POTION, ITEM_POTION },
                 },
                 .resultQuantity = 2,
+                .unlockFlag = FLAG_ITEM_ROUTE_102_POTION,
             },
             {
                 .pattern =
@@ -50,6 +54,7 @@ static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
                     { ITEM_FRESH_WATER },
                 },
                 .resultQuantity = 2,
+                .unlockFlag = 0,
             },
         },
         .count = 2,
