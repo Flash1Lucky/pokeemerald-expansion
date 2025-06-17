@@ -38,6 +38,13 @@ static void PackUpNo(u8 taskId);
 static bool8 CraftMenu_HasItemsOnTable(void);
 static void Task_AdjustQuantity(u8 taskId);
 static void CraftMenu_ReshowAfterBagMenu(void);
+static void Task_WaitForCraftMessageAck(u8 taskId);
+static void Task_NoCraftItems(u8 taskId);
+static void Task_InvalidCraft(u8 taskId);
+static void Task_CraftAsk(u8 taskId);
+static void Task_ShowCraftYesNo(u8 taskId);
+static void CraftYes(u8 taskId);
+static void CraftNo(u8 taskId);
 void CB2_ReturnToCraftMenu(void);
 
 static const u8 sText_CraftPlaceHowManyVar1[] = _("Place how many {STR_VAR_1}?");
@@ -174,8 +181,30 @@ static bool8 HandleCraftMenuInput(void)
     if (JOY_NEW(START_BUTTON))
     {
         PlaySE(SE_SELECT);
-        if (CraftLogic_Craft(gCraftRecipes, gCraftRecipeCount))
-            CraftMenuUI_DrawIcons();
+        gMenuCallback = NULL;
+        if (!CraftMenu_HasItemsOnTable())
+        {
+            CreateTask(Task_NoCraftItems, 0);
+            return FALSE;
+        }
+        else
+        {
+            u16 itemId;
+            const struct CraftRecipe *recipe = CraftLogic_GetMatchingRecipe(gCraftRecipes, gCraftRecipeCount, &itemId);
+            if (recipe == NULL)
+            {
+                CreateTask(Task_InvalidCraft, 0);
+                return FALSE;
+            }
+            else
+            {
+                u16 qty = CraftLogic_GetCraftableQuantity(recipe);
+                u8 taskId = CreateTask(Task_CraftAsk, 0);
+                gTasks[taskId].data[0] = itemId;
+                gTasks[taskId].data[1] = qty;
+                return FALSE;
+            }
+        }
     }
 
     if (CraftMenuUI_HandleDpadInput())
@@ -417,4 +446,59 @@ static void CraftMenu_ReshowAfterBagMenu(void)
     sKeepSlots = TRUE;
     StartCraftMenu();
     FadeInFromBlack();
+}
+
+static void Task_WaitForCraftMessageAck(u8 taskId)
+{
+    if (JOY_NEW(A_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        CraftMenuUI_ClearMessage();
+        gMenuCallback = HandleCraftMenuInput;
+        DestroyTask(taskId);
+    }
+}
+
+static void Task_NoCraftItems(u8 taskId)
+{
+    CraftMenuUI_DisplayNoItemsMessage(taskId, Task_WaitForCraftMessageAck);
+}
+
+static void Task_InvalidCraft(u8 taskId)
+{
+    CraftMenuUI_DisplayInvalidMessage(taskId, Task_WaitForCraftMessageAck);
+}
+
+static void CraftYes(u8 taskId)
+{
+    if (CraftLogic_Craft(gCraftRecipes, gCraftRecipeCount))
+        CraftMenuUI_DrawIcons();
+    CraftMenuUI_ClearMessage();
+    gMenuCallback = HandleCraftMenuInput;
+    DestroyTask(taskId);
+}
+
+static void CraftNo(u8 taskId)
+{
+    CraftMenuUI_ClearMessage();
+    gMenuCallback = HandleCraftMenuInput;
+    DestroyTask(taskId);
+}
+
+static const struct YesNoFuncTable sCraftYesNoFuncs = {
+    .yesFunc = CraftYes,
+    .noFunc = CraftNo,
+};
+
+static void Task_ShowCraftYesNo(u8 taskId)
+{
+    CraftMenuUI_ShowYesNo();
+    DoYesNoFuncWithChoice(taskId, &sCraftYesNoFuncs);
+}
+
+static void Task_CraftAsk(u8 taskId)
+{
+    u16 itemId = gTasks[taskId].data[0];
+    u16 qty = gTasks[taskId].data[1];
+    CraftMenuUI_DisplayCraftConfirmMessage(taskId, itemId, qty, Task_ShowCraftYesNo);
 }

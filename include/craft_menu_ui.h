@@ -16,6 +16,13 @@ void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask);
 void CraftMenuUI_ShowPackUpYesNo(void);
 void CraftMenuUI_ClearPackUpMessage(void);
 
+void CraftMenuUI_DisplayMessage(u8 taskId, const u8 *text, TaskFunc nextTask);
+void CraftMenuUI_ShowYesNo(void);
+void CraftMenuUI_ClearMessage(void);
+void CraftMenuUI_DisplayNoItemsMessage(u8 taskId, TaskFunc nextTask);
+void CraftMenuUI_DisplayInvalidMessage(u8 taskId, TaskFunc nextTask);
+void CraftMenuUI_DisplayCraftConfirmMessage(u8 taskId, u16 itemId, u16 quantity, TaskFunc nextTask);
+
 // Additional UI features
 void CraftMenuUI_ShowActionMenu(void);
 void CraftMenuUI_HideActionMenu(void);
