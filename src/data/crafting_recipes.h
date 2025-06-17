@@ -10,19 +10,23 @@ struct CraftRecipe
     u16 resultQuantity;
 };
 
-static const struct CraftRecipe sRecipe_Antidote =
-{
-    .pattern = {
-        { ITEM_POTION },
-        { ITEM_PECHA_BERRY },
-    },
-    .resultItemId = ITEM_ANTIDOTE,
-    .resultQuantity = 3,
-};
-
 static const struct CraftRecipe gCraftRecipes[] =
 {
-    sRecipe_Antidote,
+    {
+        .pattern = {
+            { ITEM_POTION },
+            { ITEM_PECHA_BERRY },
+        },
+        .resultItemId = ITEM_ANTIDOTE,
+        .resultQuantity = 3,
+    },
+    {
+        .pattern = {
+            { ITEM_POTION, ITEM_POTION, ITEM_POTION },
+        },
+        .resultItemId = ITEM_SUPER_POTION,
+        .resultQuantity = 2,
+    },
 };
 
 static const u16 gCraftRecipeCount = ARRAY_COUNT(gCraftRecipes);
