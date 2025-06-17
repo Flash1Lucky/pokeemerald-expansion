@@ -17,8 +17,8 @@ void CraftLogic_InitSlots(void);
 void CraftLogic_SetSlot(u8 slot, u16 itemId, u16 quantity);
 void CraftLogic_SwapSlots(u8 slotA, u8 slotB);
 
-struct CraftRecipe;
+struct CraftRecipeList;
 
-u16 CraftLogic_Craft(const struct CraftRecipe *recipes, u16 recipeCount);
+u16 CraftLogic_Craft(const struct CraftRecipeList *recipes, u16 recipeCount);
 
 #endif // GUARD_CRAFT_LOGIC_H

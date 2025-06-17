@@ -6,27 +6,47 @@
 struct CraftRecipe
 {
     u16 pattern[CRAFT_ROWS][CRAFT_COLS];
-    u16 resultItemId;
     u16 resultQuantity;
 };
 
-static const struct CraftRecipe gCraftRecipes[] =
+struct CraftRecipeList
+{
+    const struct CraftRecipe *recipes;
+    u8 count;
+};
+
+static const struct CraftRecipe sAntidoteRecipes[] =
 {
     {
         .pattern = {
             { ITEM_POTION },
             { ITEM_PECHA_BERRY },
         },
-        .resultItemId = ITEM_ANTIDOTE,
         .resultQuantity = 3,
     },
+};
+
+static const struct CraftRecipe sSuperPotionRecipes[] =
+{
     {
         .pattern = {
             { ITEM_POTION, ITEM_POTION, ITEM_POTION },
         },
-        .resultItemId = ITEM_SUPER_POTION,
         .resultQuantity = 2,
     },
+    {
+        .pattern = {
+            { ITEM_ORAN_BERRY, ITEM_ORAN_BERRY },
+            { ITEM_FRESH_WATER },
+        },
+        .resultQuantity = 2,
+    },
+};
+
+static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
+{
+    [ITEM_ANTIDOTE] = { sAntidoteRecipes, ARRAY_COUNT(sAntidoteRecipes) },
+    [ITEM_SUPER_POTION] = { sSuperPotionRecipes, ARRAY_COUNT(sSuperPotionRecipes) },
 };
 
 static const u16 gCraftRecipeCount = ARRAY_COUNT(gCraftRecipes);

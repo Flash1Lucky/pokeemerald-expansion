@@ -103,7 +103,7 @@ static u16 TryCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int b
     return minQty;
 }
 
-static u16 ApplyRecipe(const struct CraftRecipe *recipe)
+static u16 ApplyRecipe(u16 resultItemId, const struct CraftRecipe *recipe)
 {
     int patRows, patCols;
     u16 crafted = 0;
@@ -134,19 +134,24 @@ static u16 ApplyRecipe(const struct CraftRecipe *recipe)
     } while (progress);
 
     if (crafted)
-        AddBagItem(recipe->resultItemId, crafted * recipe->resultQuantity);
+        AddBagItem(resultItemId, crafted * recipe->resultQuantity);
 
     return crafted * recipe->resultQuantity;
 }
 
-u16 CraftLogic_Craft(const struct CraftRecipe *recipes, u16 recipeCount)
+u16 CraftLogic_Craft(const struct CraftRecipeList *recipes, u16 recipeCount)
 {
-    u16 i;
-    for (i = 0; i < recipeCount; i++)
+    u16 itemId;
+    for (itemId = 0; itemId < recipeCount; itemId++)
     {
-        u16 crafted = ApplyRecipe(&recipes[i]);
-        if (crafted)
-            return crafted;
+        const struct CraftRecipeList *list = &recipes[itemId];
+        u8 r;
+        for (r = 0; r < list->count; r++)
+        {
+            u16 crafted = ApplyRecipe(itemId, &list->recipes[r]);
+            if (crafted)
+                return crafted;
+        }
     }
 
     return 0;
