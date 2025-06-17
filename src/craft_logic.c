@@ -62,7 +62,8 @@ static void GetRecipeDimensions(const struct CraftRecipe *recipe, int *rows, int
     *cols = maxCol + 1;
 }
 
-static u16 TryCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols)
+static u16 TryCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols,
+                            struct ItemSlot slots[CRAFT_ROWS][CRAFT_COLS], bool8 consume)
 {
     int r, c;
     u16 minQty = 0xFFFF;
@@ -74,7 +75,7 @@ static u16 TryCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int b
             u16 itemId = recipe->pattern[r][c];
             if (itemId != ITEM_NONE)
             {
-                struct ItemSlot *slot = &gCraftSlots[baseRow + r][baseCol + c];
+                struct ItemSlot *slot = &slots[baseRow + r][baseCol + c];
                 if (slot->itemId != itemId || slot->quantity == 0)
                     return 0;
                 if (slot->quantity < minQty)
@@ -86,16 +87,19 @@ static u16 TryCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int b
     if (minQty == 0 || minQty == 0xFFFF)
         return 0;
 
-    for (r = 0; r < patRows; r++)
+    if (consume)
     {
-        for (c = 0; c < patCols; c++)
+        for (r = 0; r < patRows; r++)
         {
-            if (recipe->pattern[r][c] != ITEM_NONE)
+            for (c = 0; c < patCols; c++)
             {
-                struct ItemSlot *slot = &gCraftSlots[baseRow + r][baseCol + c];
-                slot->quantity -= minQty;
-                if (slot->quantity == 0)
-                    slot->itemId = ITEM_NONE;
+                if (recipe->pattern[r][c] != ITEM_NONE)
+                {
+                    struct ItemSlot *slot = &slots[baseRow + r][baseCol + c];
+                    slot->quantity -= minQty;
+                    if (slot->quantity == 0)
+                        slot->itemId = ITEM_NONE;
+                }
             }
         }
     }
@@ -123,7 +127,7 @@ static u16 ApplyRecipe(u16 resultItemId, const struct CraftRecipe *recipe)
         {
             for (baseCol = 0; baseCol <= CRAFT_COLS - patCols && !progress; baseCol++)
             {
-                u16 sets = TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols);
+                u16 sets = TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, TRUE);
                 if (sets)
                 {
                     crafted += sets;
@@ -139,46 +143,7 @@ static u16 ApplyRecipe(u16 resultItemId, const struct CraftRecipe *recipe)
     return crafted * recipe->resultQuantity;
 }
 
-u16 CraftLogic_Craft(const struct CraftRecipeList *recipes, u16 recipeCount)
-{
-    u16 itemId;
-    for (itemId = 0; itemId < recipeCount; itemId++)
-    {
-        const struct CraftRecipeList *list = &recipes[itemId];
-        u8 r;
-        for (r = 0; r < list->count; r++)
-        {
-            u16 crafted = ApplyRecipe(itemId, &list->recipes[r]);
-            if (crafted)
-                return crafted;
-        }
-    }
-
-    return 0;
-}
-
-static bool8 CanCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols)
-{
-    int r, c;
-
-    for (r = 0; r < patRows; r++)
-    {
-        for (c = 0; c < patCols; c++)
-        {
-            u16 itemId = recipe->pattern[r][c];
-            if (itemId != ITEM_NONE)
-            {
-                struct ItemSlot *slot = &gCraftSlots[baseRow + r][baseCol + c];
-                if (slot->itemId != itemId || slot->quantity == 0)
-                    return FALSE;
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-bool8 CraftLogic_CanCraft(const struct CraftRecipeList *recipes, u16 recipeCount)
+const struct CraftRecipe *CraftLogic_GetMatchingRecipe(const struct CraftRecipeList *recipes, u16 recipeCount, u16 *resultItemId)
 {
     u16 itemId;
 
@@ -201,12 +166,75 @@ bool8 CraftLogic_CanCraft(const struct CraftRecipeList *recipes, u16 recipeCount
             {
                 for (baseCol = 0; baseCol <= CRAFT_COLS - patCols; baseCol++)
                 {
-                    if (CanCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols))
-                        return TRUE;
+                    if (TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, FALSE))
+                    {
+                        if (resultItemId)
+                            *resultItemId = itemId;
+                        return recipe;
+                    }
                 }
             }
         }
     }
 
-    return FALSE;
+    return NULL;
+}
+
+u16 CraftLogic_GetCraftableQuantity(const struct CraftRecipe *recipe)
+{
+    struct ItemSlot temp[CRAFT_ROWS][CRAFT_COLS];
+    int patRows, patCols;
+    u16 crafted = 0;
+
+    memcpy(temp, gCraftSlots, sizeof(temp));
+    GetRecipeDimensions(recipe, &patRows, &patCols);
+
+    if (patRows == 0 || patCols == 0)
+        return 0;
+
+    bool8 progress;
+    do
+    {
+        int baseRow, baseCol;
+        progress = FALSE;
+
+        for (baseRow = 0; baseRow <= CRAFT_ROWS - patRows && !progress; baseRow++)
+        {
+            for (baseCol = 0; baseCol <= CRAFT_COLS - patCols && !progress; baseCol++)
+            {
+                u16 sets = TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, temp, TRUE);
+                if (sets)
+                {
+                    crafted += sets;
+                    progress = TRUE;
+                }
+            }
+        }
+    } while (progress);
+
+    return crafted * recipe->resultQuantity;
+}
+
+u16 CraftLogic_Craft(const struct CraftRecipeList *recipes, u16 recipeCount)
+{
+    u16 itemId;
+    const struct CraftRecipe *recipe = CraftLogic_GetMatchingRecipe(recipes, recipeCount, &itemId);
+
+    if (recipe)
+        return ApplyRecipe(itemId, recipe);
+
+    return 0;
+}
+
+static bool8 CanCraftRecipeAt(const struct CraftRecipe *recipe, int baseRow, int baseCol, int patRows, int patCols)
+{
+    return TryCraftRecipeAt(recipe, baseRow, baseCol, patRows, patCols, gCraftSlots, FALSE);
+}
+
+bool8 CraftLogic_CanCraft(const struct CraftRecipeList *recipes, u16 recipeCount)
+{
+    u16 itemId;
+    const struct CraftRecipe *recipe = CraftLogic_GetMatchingRecipe(recipes, recipeCount, &itemId);
+
+    return (recipe != NULL);
 }
