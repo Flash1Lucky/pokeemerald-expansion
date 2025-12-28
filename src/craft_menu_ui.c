@@ -644,6 +644,13 @@ void CraftMenuUI_DisplayMessage(u8 taskId, const u8 *text, TaskFunc nextTask)
 {
     HideInfoWindow();
 
+    if (sCraftMessageWindowId != WINDOW_NONE)
+    {
+        ClearDialogWindowAndFrame(sCraftMessageWindowId, TRUE);
+        RemoveWindow(sCraftMessageWindowId);
+        sCraftMessageWindowId = WINDOW_NONE;
+    }
+
     sCraftMessageWindowId = AddWindow(&sCraftWindowTemplates[WINDOW_CRAFT_MESSAGE]);
     LoadMessageBoxAndBorderGfx();
     StringExpandPlaceholders(gStringVar4, text);
@@ -766,5 +773,4 @@ void CraftMenuUI_ClearAdjustQtyMessage(void)
 {
     CraftMenuUI_ClearMessage();
 }
-
 

@@ -41,6 +41,7 @@ static void Task_AdjustQuantity_Init(u8 taskId);
 static void Task_AdjustQuantity_HandleInput(u8 taskId);
 static void CraftMenu_ReshowAfterBagMenu(void);
 static void Task_WaitForCraftMessageAck(u8 taskId);
+static void Task_WaitForCraftResultAck(u8 taskId);
 static void Task_NoCraftItems(u8 taskId);
 static void Task_InvalidCraft(u8 taskId);
 static void Task_CraftAsk(u8 taskId);
@@ -90,6 +91,55 @@ enum {
 };
 
 static u8 sSwapFromSlot = 0;
+
+static const u8 sText_CraftSuccess[] = _("{STR_VAR_1} {STR_VAR_2} were crafted and\nput away in the {STR_VAR_3} POCKET.");
+static const u8 sText_CraftExcess[] = _("Used {STR_VAR_1} of each ingredient. Excess\ningredients were left on the table.");
+
+static u16 GetUsedPerIngredient(const struct ItemSlot slotsBefore[CRAFT_ROWS][CRAFT_COLS], bool8 *hasRemaining)
+{
+    u16 usedPerIngredient = 0;
+    int row;
+    int col;
+
+    *hasRemaining = FALSE;
+    for (row = 0; row < CRAFT_ROWS; row++)
+    {
+        for (col = 0; col < CRAFT_COLS; col++)
+        {
+            const struct ItemSlot *before = &slotsBefore[row][col];
+            const struct ItemSlot *after = &gCraftSlots[row][col];
+            u16 used = 0;
+
+            if (after->itemId != ITEM_NONE)
+                *hasRemaining = TRUE;
+
+            if (before->itemId != ITEM_NONE)
+            {
+                if (after->itemId == before->itemId && after->quantity <= before->quantity)
+                    used = before->quantity - after->quantity;
+                else
+                    used = before->quantity;
+
+                if (used != 0 && (usedPerIngredient == 0 || used < usedPerIngredient))
+                    usedPerIngredient = used;
+            }
+        }
+    }
+
+    return usedPerIngredient;
+}
+
+static void SetCraftSuccessVars(u16 resultItemId, u16 resultQty)
+{
+    ConvertIntToDecimalStringN(gStringVar1, resultQty, STR_CONV_MODE_LEFT_ALIGN, 3);
+    CopyItemNameHandlePlural(resultItemId, gStringVar2, resultQty);
+    StringCopy(gStringVar3, gPocketNamesStringsTable[GetItemPocket(resultItemId)]);
+}
+
+static void SetCraftExcessVars(u16 usedPerIngredient)
+{
+    ConvertIntToDecimalStringN(gStringVar1, usedPerIngredient, STR_CONV_MODE_LEFT_ALIGN, 3);
+}
 
 static void InitCraftMenu(void)
 {
@@ -204,10 +254,10 @@ static bool8 HandleCraftMenuInput(void)
 
     if (JOY_NEW(START_BUTTON))
     {
-        PlaySE(SE_SELECT);
         gMenuCallback = NULL;
         if (!CraftMenu_HasItemsOnTable())
         {
+            PlaySE(SE_SELECT);
             CreateTask(Task_NoCraftItems, 0);
             return FALSE;
         }
@@ -217,11 +267,13 @@ static bool8 HandleCraftMenuInput(void)
             const struct CraftRecipe *recipe = CraftLogic_GetMatchingRecipe(gCraftRecipes, gCraftRecipeCount, &itemId);
             if (recipe == NULL)
             {
+                PlaySE(SE_FAILURE);
                 CreateTask(Task_InvalidCraft, 0);
                 return FALSE;
             }
             else
             {
+                PlaySE(SE_SELECT);
                 u16 qty = CraftLogic_GetCraftableQuantity(recipe);
                 u8 taskId = CreateTask(Task_CraftAsk, 0);
                 gTasks[taskId].data[0] = itemId;
@@ -491,6 +543,32 @@ static void Task_WaitForCraftMessageAck(u8 taskId)
     }
 }
 
+static void Task_WaitForCraftResultAck(u8 taskId)
+{
+    if (gTasks[taskId].data[0] < 30)
+    {
+        gTasks[taskId].data[0]++;
+        return;
+    }
+
+    if (JOY_NEW(A_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        if (gTasks[taskId].data[1])
+        {
+            gTasks[taskId].data[1] = 0;
+            SetCraftExcessVars(gTasks[taskId].data[2]);
+            CraftMenuUI_DisplayMessage(taskId, sText_CraftExcess, Task_WaitForCraftMessageAck);
+        }
+        else
+        {
+            CraftMenuUI_ClearMessage();
+            gMenuCallback = HandleCraftMenuInput;
+            DestroyTask(taskId);
+        }
+    }
+}
+
 //---------------------------------------------------------------------------
 // Crafting confirmation flow
 //---------------------------------------------------------------------------
@@ -507,11 +585,26 @@ static void Task_InvalidCraft(u8 taskId)
 
 static void CraftYes(u8 taskId)
 {
-    if (CraftLogic_Craft(gCraftRecipes, gCraftRecipeCount))
+    struct ItemSlot slotsBefore[CRAFT_ROWS][CRAFT_COLS];
+    u16 crafted;
+    u16 resultItemId = gTasks[taskId].data[0];
+    bool8 hasRemaining;
+    u16 usedPerIngredient;
+
+    memcpy(slotsBefore, gCraftSlots, sizeof(slotsBefore));
+    crafted = CraftLogic_Craft(gCraftRecipes, gCraftRecipeCount);
+    if (crafted)
+    {
+        PlayFanfare(MUS_OBTAIN_ITEM);
         CraftMenuUI_DrawIcons();
-    CraftMenuUI_ClearMessage();
-    gMenuCallback = HandleCraftMenuInput;
-    DestroyTask(taskId);
+    }
+    usedPerIngredient = GetUsedPerIngredient(slotsBefore, &hasRemaining);
+    SetCraftSuccessVars(resultItemId, crafted);
+    gMenuCallback = NULL;
+    gTasks[taskId].data[0] = 0;
+    gTasks[taskId].data[1] = hasRemaining;
+    gTasks[taskId].data[2] = usedPerIngredient;
+    CraftMenuUI_DisplayMessage(taskId, sText_CraftSuccess, Task_WaitForCraftResultAck);
 }
 
 static void CraftNo(u8 taskId)
