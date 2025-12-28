@@ -4,8 +4,15 @@
 #include "data/crafting_recipes.h"
 #include "event_data.h"
 
-EWRAM_DATA struct ItemSlot gCraftSlots[CRAFT_ROWS][CRAFT_COLS];
-EWRAM_DATA u8 gCraftActiveSlot = 0;
+//---------------------------------------------------------------------------
+// Crafting state
+//---------------------------------------------------------------------------
+
+EWRAM_DATA struct CraftMenuState gCraftState = {0};
+
+//---------------------------------------------------------------------------
+// Initialization and slot management
+//---------------------------------------------------------------------------
 
 void CraftLogic_InitSlots(void)
 {
@@ -38,6 +45,10 @@ void CraftLogic_SwapSlots(u8 slotA, u8 slotB)
     gCraftSlots[CRAFT_SLOT_ROW(slotA)][CRAFT_SLOT_COL(slotA)] = gCraftSlots[CRAFT_SLOT_ROW(slotB)][CRAFT_SLOT_COL(slotB)];
     gCraftSlots[CRAFT_SLOT_ROW(slotB)][CRAFT_SLOT_COL(slotB)] = temp;
 }
+
+//---------------------------------------------------------------------------
+// Recipe utilities
+//---------------------------------------------------------------------------
 
 static void GetRecipeDimensions(const struct CraftRecipe *recipe, int *rows, int *cols)
 {
@@ -162,6 +173,10 @@ static u16 ApplyRecipe(u16 resultItemId, const struct CraftRecipe *recipe)
 
     return crafted * recipe->resultQuantity;
 }
+
+//---------------------------------------------------------------------------
+// Public crafting API
+//---------------------------------------------------------------------------
 
 const struct CraftRecipe *CraftLogic_GetMatchingRecipe(const struct CraftRecipeList *recipes, u16 recipeCount, u16 *resultItemId)
 {
