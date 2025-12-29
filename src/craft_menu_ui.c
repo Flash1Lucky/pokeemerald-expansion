@@ -97,17 +97,28 @@ static const u8 sInputTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRA
 static const u8 sHintTextColor[] = {TEXT_COLOR_WHITE, TEXT_COLOR_GREEN, TEXT_COLOR_LIGHT_GREEN};
 static const u8 sSwapTextColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED};
 
+static const s8 sCraftCursorXOffset = -13;
+
 struct GridSlotPos
 {
     u8 x;
     u8 y;
 };
 
+static const u8 sWorkbenchColPositions[CRAFT_COLS] = {19, 44, 69};
+static const u8 sWorkbenchRowPositions[CRAFT_ROWS] = {4, 28, 52};
+
 static const struct GridSlotPos sWorkbenchSlotPositions[CRAFT_SLOT_COUNT] =
 {
-    {18,  1},  {45,  1},  {72,  1},
-    {18, 28},  {45, 28},  {72, 28},
-    {18, 55},  {45, 55},  {72, 55},
+    {sWorkbenchColPositions[0], sWorkbenchRowPositions[0]},
+    {sWorkbenchColPositions[1], sWorkbenchRowPositions[0]},
+    {sWorkbenchColPositions[2], sWorkbenchRowPositions[0]},
+    {sWorkbenchColPositions[0], sWorkbenchRowPositions[1]},
+    {sWorkbenchColPositions[1], sWorkbenchRowPositions[1]},
+    {sWorkbenchColPositions[2], sWorkbenchRowPositions[1]},
+    {sWorkbenchColPositions[0], sWorkbenchRowPositions[2]},
+    {sWorkbenchColPositions[1], sWorkbenchRowPositions[2]},
+    {sWorkbenchColPositions[2], sWorkbenchRowPositions[2]},
 };
 
 static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
@@ -462,7 +473,7 @@ void CraftMenuUI_UpdateGrid(void)
         if (i == sCraftCursorPos)
         {
             const u8 *color = sInSwapMode ? sSwapTextColor : sGridTextColor;
-            AddTextPrinterParameterized3(sCraftGridWindowId, FONT_NORMAL, pos->x - 14, pos->y, color, 0, gText_SelectorArrow2);
+            AddTextPrinterParameterized3(sCraftGridWindowId, FONT_NORMAL, pos->x + sCraftCursorXOffset, pos->y, color, 0, gText_SelectorArrow2);
         }
     }
     CopyWindowToVram(sCraftGridWindowId, COPYWIN_FULL);
@@ -773,4 +784,3 @@ void CraftMenuUI_ClearAdjustQtyMessage(void)
 {
     CraftMenuUI_ClearMessage();
 }
-
