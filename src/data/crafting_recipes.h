@@ -35,6 +35,22 @@ static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
         },
         .count = 1,
     },
+    [ITEM_POTION] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_ORAN_BERRY, },
+                    { ITEM_FRESH_WATER, },
+                },
+                .resultQuantity = 1,
+                .unlockFlag = 0,
+            },
+        },
+        .count = 1,
+    },
     [ITEM_SUPER_POTION] =
     {
         .recipes = (const struct CraftRecipe[])
@@ -54,6 +70,120 @@ static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
                     { ITEM_FRESH_WATER },
                 },
                 .resultQuantity = 2,
+                .unlockFlag = 0,
+            },
+        },
+        .count = 2,
+    },
+    [ITEM_RARE_CANDY] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_UNREMARKABLE_TEACUP, ITEM_TWICE_SPICED_RADISH, ITEM_FIGHTING_TERA_SHARD, },
+                    { ITEM_ELECTRIC_TERA_SHARD, ITEM_STELLAR_TERA_SHARD, ITEM_SCROLL_OF_DARKNESS, },
+                    { ITEM_AUSPICIOUS_ARMOR, ITEM_MASTERPIECE_TEACUP, ITEM_TINY_BAMBOO_SHOOT}
+                },
+                .resultQuantity = 1,
+                .unlockFlag = 0,
+            },
+        },
+        .count = 1,
+    },
+    [ITEM_POKE_BALL] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_RED_APRICORN, ITEM_RED_APRICORN},
+                },
+                .resultQuantity = 1,
+                .unlockFlag = 0,
+            },
+        },
+        .count = 1,
+    },
+    [ITEM_GREAT_BALL] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_BLUE_APRICORN, },
+                    { ITEM_POKE_BALL, },
+                },
+                .resultQuantity = 1,
+                .unlockFlag = 0,
+            },
+        },
+        .count = 1,
+    },
+    /*[ITEM_ACRO_BIKE] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_ORAN_BERRY },
+                    { ITEM_PECHA_BERRY, },
+                },
+                .resultQuantity = 1,
+                .unlockFlag = 0,
+            },
+        },
+        .count = 1,
+    },*/
+    [ITEM_MASTERPIECE_TEACUP] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_CHIPPED_POT, },
+                    { ITEM_FRESH_WATER, },
+                },
+                .resultQuantity = 1,
+                .unlockFlag = 0,
+            },
+            {
+                .pattern =
+                {
+                    { ITEM_GREEN_APRICORN, ITEM_YELLOW_APRICORN, ITEM_BLACK_APRICORN },
+                },
+                .resultQuantity = 2,
+                .unlockFlag = 0,
+            },
+        },
+        .count = 2,
+    },
+    [ITEM_TWICE_SPICED_RADISH] =
+    {
+        .recipes = (const struct CraftRecipe[])
+        {
+            {
+                .pattern =
+                {
+                    { ITEM_BLUE_APRICORN, },
+                    { ITEM_RED_APRICORN, },
+                },
+                .resultQuantity = 1,
+                .unlockFlag = 0,
+            },
+            {
+                .pattern =
+                {
+                    { ITEM_ORAN_BERRY, },
+                    { ITEM_PECHA_BERRY, },
+                    { ITEM_SITRUS_BERRY, },
+                },
+                .resultQuantity = 1,
                 .unlockFlag = 0,
             },
         },

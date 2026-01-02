@@ -11,6 +11,7 @@ bool8 CraftMenuUI_HandleDpadInput(void);
 void CraftMenuUI_Close(void);
 u8 CraftMenuUI_GetCursorPos(void);
 void CraftMenuUI_SetCursorPos(u8 pos);
+void CraftMenuUI_GetItemIconPos(u8 slot, s16 baseX, s16 baseY, s16 *x, s16 *y);
 
 void CraftMenuUI_DisplayPackUpMessage(u8 taskId, TaskFunc nextTask);
 void CraftMenuUI_ShowPackUpYesNo(void);

@@ -1725,6 +1725,9 @@ const u16 gBagScreenFemale_Pal[] = INCBIN_U16("graphics/bag/menu_female.gbapal")
 
 const u32 gBagScreen_Gfx[] = INCBIN_U32("graphics/bag/menu.4bpp.smol");
 const u32 gBagScreen_GfxTileMap[] = INCBIN_U32("graphics/bag/menu.bin.smolTM");
+const u16 gRecipeBookMenu_Pal[] = INCBIN_U16("graphics/crafting/recipe_book_menu.gbapal");
+const u32 gRecipeBookMenu_Gfx[] = INCBIN_U32("graphics/crafting/recipe_book_menu.4bpp");
+const u32 gRecipeBookMenu_Tilemap[] = INCBIN_U32("graphics/crafting/recipe_book_menu.bin");
 
 const u32 gBattlePyramidBag_Gfx[]          = INCBIN_U32("graphics/bag/bag_pyramid.4bpp.smol");
 const u16 gBattlePyramidBag_Pal[]          = INCBIN_U16("graphics/bag/bag_pyramid.gbapal"); // female palette is first and male is second.
@@ -1739,17 +1742,17 @@ const u16 gShopMenu_Pal[] = INCBIN_U16("graphics/shop/menu.gbapal");
 const u32 gShopMenu_Tilemap[] = INCBIN_U32("graphics/shop/menu.bin.smolTM");
 const u32 gShopMenuMoney_Gfx[] = INCBIN_U32("graphics/shop/money.4bpp.smol");
 
-const u32 gCraftWorkbench_TopLeft_Gfx[]    = INCBIN_U32("graphics/interface/workbench_top_left.4bpp.lz");
-const u32 gCraftWorkbench_TopMid_Gfx[]     = INCBIN_U32("graphics/interface/workbench_top_mid.4bpp.lz");
-const u32 gCraftWorkbench_TopRight_Gfx[]   = INCBIN_U32("graphics/interface/workbench_top_right.4bpp.lz");
-const u32 gCraftWorkbench_MidLeft_Gfx[]    = INCBIN_U32("graphics/interface/workbench_mid_left.4bpp.lz");
-const u32 gCraftWorkbench_MidMid_Gfx[]     = INCBIN_U32("graphics/interface/workbench_mid_mid.4bpp.lz");
-const u32 gCraftWorkbench_MidRight_Gfx[]   = INCBIN_U32("graphics/interface/workbench_mid_right.4bpp.lz");
-const u32 gCraftWorkbench_BotLeft_Gfx[]    = INCBIN_U32("graphics/interface/workbench_bot_left.4bpp.lz");
-const u32 gCraftWorkbench_BotMid_Gfx[]     = INCBIN_U32("graphics/interface/workbench_bot_mid.4bpp.lz");
-const u32 gCraftWorkbench_BotRight_Gfx[]   = INCBIN_U32("graphics/interface/workbench_bot_right.4bpp.lz");
+const u32 gCraftWorkbench_TopLeft_Gfx[]    = INCBIN_U32("graphics/crafting/workbench_top_left.4bpp.lz");
+const u32 gCraftWorkbench_TopMid_Gfx[]     = INCBIN_U32("graphics/crafting/workbench_top_mid.4bpp.lz");
+const u32 gCraftWorkbench_TopRight_Gfx[]   = INCBIN_U32("graphics/crafting/workbench_top_right.4bpp.lz");
+const u32 gCraftWorkbench_MidLeft_Gfx[]    = INCBIN_U32("graphics/crafting/workbench_mid_left.4bpp.lz");
+const u32 gCraftWorkbench_MidMid_Gfx[]     = INCBIN_U32("graphics/crafting/workbench_mid_mid.4bpp.lz");
+const u32 gCraftWorkbench_MidRight_Gfx[]   = INCBIN_U32("graphics/crafting/workbench_mid_right.4bpp.lz");
+const u32 gCraftWorkbench_BotLeft_Gfx[]    = INCBIN_U32("graphics/crafting/workbench_bot_left.4bpp.lz");
+const u32 gCraftWorkbench_BotMid_Gfx[]     = INCBIN_U32("graphics/crafting/workbench_bot_mid.4bpp.lz");
+const u32 gCraftWorkbench_BotRight_Gfx[]   = INCBIN_U32("graphics/crafting/workbench_bot_right.4bpp.lz");
 
-const u16 gCraftWorkbench_Pal[] = INCBIN_U16("graphics/interface/workbench.gbapal");
+const u16 gCraftWorkbench_Pal[] = INCBIN_U16("graphics/crafting/workbench.gbapal");
 
 // Pokeblock
 
@@ -2130,4 +2133,3 @@ const u32 gBattleIcons_Gfx1[] = INCBIN_U32("graphics/types/battle_icons1.4bpp.sm
 const u32 gBattleIcons_Gfx2[] = INCBIN_U32("graphics/types/battle_icons2.4bpp.smol");
 const u16 gBattleIcons_Pal1[] = INCBIN_U16("graphics/types/battle_icons1.gbapal");
 const u16 gBattleIcons_Pal2[] = INCBIN_U16("graphics/types/battle_icons2.gbapal");
-

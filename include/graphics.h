@@ -1754,6 +1754,9 @@ extern const u32 gBagScreen_Gfx[];
 extern const u32 gBagScreen_GfxTileMap[];
 extern const u16 gBagScreenFemale_Pal[];
 extern const u16 gBagScreenMale_Pal[];
+extern const u32 gRecipeBookMenu_Gfx[];
+extern const u32 gRecipeBookMenu_Tilemap[];
+extern const u16 gRecipeBookMenu_Pal[];
 extern const u8 gBagMenuHMIcon_Gfx[];
 
 // item menu icons graphics

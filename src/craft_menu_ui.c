@@ -121,6 +121,22 @@ static const struct GridSlotPos sWorkbenchSlotPositions[CRAFT_SLOT_COUNT] =
     {sWorkbenchColPositions[2], sWorkbenchRowPositions[2]},
 };
 
+void CraftMenuUI_GetItemIconPos(u8 slot, s16 baseX, s16 baseY, s16 *x, s16 *y)
+{
+    const struct GridSlotPos *pos;
+
+    if (slot >= CRAFT_SLOT_COUNT)
+    {
+        *x = baseX;
+        *y = baseY;
+        return;
+    }
+
+    pos = &sWorkbenchSlotPositions[slot];
+    *x = pos->x + baseX;
+    *y = pos->y + baseY;
+}
+
 static const struct WindowTemplate sCraftWindowTemplates[NUM_CRAFT_WINDOWS] =
 {
     [WINDOW_CRAFT_GRID] = {
