@@ -36,6 +36,7 @@
 #include "field_weather.h"
 #include "palette.h"
 #include "overworld.h"
+#include "comfy_anim.h"
 
 static void Task_EnterCraftMenu(u8 taskId);
 static void Task_RunCraftMenu(u8 taskId);
@@ -84,11 +85,22 @@ static void RecipeBook_DestroyPatternIcons(void);
 static void RecipeBook_UpdatePatternPreview(void);
 static void RecipeBook_SchedulePatternPreview(void);
 static void RecipeBook_TickPatternPreview(void);
+static void RecipeBook_UpdateIngredientsHeaderOnly(void);
 static void RecipeBook_UpdateIngredientsWindow(void);
-static void RecipeBook_SetBgTilemap(const u32 *tilemap);
+static void RecipeBook_EnablePanelWindow(void);
+static void RecipeBook_DisablePanelWindow(void);
+static void RecipeBook_CopyPanelTilemapToBg3(const u32 *tilemap);
+static void RecipeBook_ClearPanelOverlay(void);
+static void RecipeBook_BlankPatternArea(void);
+static void RecipeBook_RestorePatternArea(void);
 static void RecipeBook_ResetIngredientsWindow(const struct WindowTemplate *template);
 static void RecipeBook_EnterExtendedIngredientsView(void);
 static void RecipeBook_ExitExtendedIngredientsView(void);
+static void RecipeBook_StartExtendAnim(u8 animState);
+static void RecipeBook_StopExtendAnim(void);
+static void RecipeBook_TickExtendAnim(void);
+static void RecipeBook_ShowPatternHideWindow(void);
+static void RecipeBook_HidePatternHideWindow(void);
 static u8 RecipeBook_GetUniqueIngredientCount(const struct CraftRecipe *recipe);
 static u8 RecipeBook_GetUnlockedVariantCount(u16 itemId);
 static u8 RecipeBook_GetVariantIndex(u16 itemId);
@@ -157,7 +169,7 @@ enum {
 
 static u8 sSwapFromSlot = 0;
 
-static const u8 sText_CraftSuccess[] = _("{STR_VAR_1} {STR_VAR_2} were crafted and\nput away in the {STR_VAR_3} POCKET.");
+static const u8 sText_CraftSuccess[] = _("{STR_VAR_1} {STR_VAR_2} were crafted\nand put away in the {STR_VAR_3} POCKET.");
 static const u8 sText_CraftExcess[] = _("Used {STR_VAR_1} of each ingredient. Excess\ningredients were left on the table.");
 
 static u16 GetUsedPerIngredient(const struct ItemSlot slotsBefore[CRAFT_ROWS][CRAFT_COLS], bool8 *hasRemaining)
@@ -287,13 +299,20 @@ enum
 
 enum
 {
+    RECIPEBOOK_EXTEND_ANIM_NONE,
+    RECIPEBOOK_EXTEND_ANIM_EXPAND,
+    RECIPEBOOK_EXTEND_ANIM_COLLAPSE
+};
+
+enum
+{
     RECIPEBOOK_AUTO_CRAFT_STATE_NONE,
     RECIPEBOOK_AUTO_CRAFT_STATE_QUANTITY,
     RECIPEBOOK_AUTO_CRAFT_STATE_CONFIRM,
     RECIPEBOOK_AUTO_CRAFT_STATE_RESULT
 };
 
-static const u8 sText_RecipeBookNoRecipes[] = _("No recipes.");
+static const u8 sText_RecipeBookNoRecipes[] = _("No recipes");
 static const u8 sText_RecipeBookClose[] = _("CLOSE RECIPE BOOK");
 static const u8 sText_RecipeBookIngredients[] = _("Required Ingredients");
 static const u8 sText_RecipeBookEllipsis[] = _("...");
@@ -359,8 +378,22 @@ static const u8 sText_RecipeBookAutoCraftHowMany[] = _("Craft how many\n{STR_VAR
 #define RECIPEBOOK_INGREDIENTS_SELECT_ICON_Y_OFFSET 6
 #define RECIPEBOOK_INGREDIENTS_LIST_VIEW_X_OFFSET 8
 
-#define RECIPEBOOK_WINDOW_FRAME_BASE_TILE STD_WINDOW_BASE_TILE_NUM
+#define RECIPEBOOK_WINDOW_FRAME_BASE_TILE 0x1B0
 #define RECIPEBOOK_WINDOW_FRAME_PALETTE 13
+
+#define RECIPEBOOK_EXTEND_ANIM_OFFSET_PIXELS 24
+#define RECIPEBOOK_EXTEND_ANIM_DURATION_FRAMES 18
+
+#define RECIPEBOOK_PANEL_TILEMAP_LEFT 16
+#define RECIPEBOOK_PANEL_TILEMAP_TOP 8
+#define RECIPEBOOK_PANEL_TILEMAP_WIDTH 13
+#define RECIPEBOOK_PANEL_TILEMAP_HEIGHT 12
+
+#define RECIPEBOOK_PATTERN_CLEAR_LEFT 16
+#define RECIPEBOOK_PATTERN_CLEAR_TOP 9
+#define RECIPEBOOK_PATTERN_CLEAR_WIDTH (DISPLAY_TILE_WIDTH - RECIPEBOOK_PATTERN_CLEAR_LEFT)
+#define RECIPEBOOK_PATTERN_CLEAR_HEIGHT (DISPLAY_TILE_HEIGHT - RECIPEBOOK_PATTERN_CLEAR_TOP)
+#define RECIPEBOOK_PATTERN_CLEAR_TILE 0x01
 
 #define RECIPEBOOK_AUTO_CRAFT_PROMPT_LEFT 2
 #define RECIPEBOOK_AUTO_CRAFT_PROMPT_TOP 15
@@ -381,6 +414,12 @@ static const u8 sText_RecipeBookAutoCraftHowMany[] = _("Craft how many\n{STR_VAR
 #define RECIPEBOOK_AUTO_CRAFT_YESNO_HEIGHT 4
 #define RECIPEBOOK_AUTO_CRAFT_YESNO_BASE_BLOCK \
     (RECIPEBOOK_AUTO_CRAFT_QTY_BASE_BLOCK + (RECIPEBOOK_AUTO_CRAFT_QTY_WIDTH * RECIPEBOOK_AUTO_CRAFT_QTY_HEIGHT))
+
+#define RECIPEBOOK_PATTERN_HIDE_LEFT 18
+#define RECIPEBOOK_PATTERN_HIDE_TOP 10
+#define RECIPEBOOK_PATTERN_HIDE_WIDTH 11
+#define RECIPEBOOK_PATTERN_HIDE_HEIGHT 9
+#define RECIPEBOOK_PATTERN_HIDE_BASE_BLOCK 0x10
 
 #define RECIPEBOOK_VARIANT_INDICATOR_RIGHT_PADDING -1
 #define RECIPEBOOK_VARIANT_INDICATOR_GAP 2
@@ -428,6 +467,17 @@ static const struct WindowTemplate sRecipeBookAutoCraftYesNoWindowTemplate =
     .height = RECIPEBOOK_AUTO_CRAFT_YESNO_HEIGHT,
     .paletteNum = 15,
     .baseBlock = RECIPEBOOK_AUTO_CRAFT_YESNO_BASE_BLOCK
+};
+
+static const struct WindowTemplate sRecipeBookPatternHideWindowTemplate =
+{
+    .bg = 1,
+    .tilemapLeft = RECIPEBOOK_PATTERN_HIDE_LEFT,
+    .tilemapTop = RECIPEBOOK_PATTERN_HIDE_TOP,
+    .width = RECIPEBOOK_PATTERN_HIDE_WIDTH,
+    .height = RECIPEBOOK_PATTERN_HIDE_HEIGHT,
+    .paletteNum = 0,
+    .baseBlock = RECIPEBOOK_PATTERN_HIDE_BASE_BLOCK
 };
 
 enum
@@ -514,6 +564,7 @@ EWRAM_DATA static u8 sRecipeBookPocketArrowTask;
 EWRAM_DATA static u16 sRecipeBookPocketArrowPos;
 EWRAM_DATA static u8 sRecipeBookBg1TilemapBuffer[BG_SCREEN_SIZE];
 EWRAM_DATA static u8 sRecipeBookBg2TilemapBuffer[BG_SCREEN_SIZE];
+EWRAM_DATA static u8 sRecipeBookBg3TilemapBuffer[BG_SCREEN_SIZE];
 EWRAM_DATA static u8 sRecipeBookPatternSpriteIds[CRAFT_SLOT_COUNT];
 EWRAM_DATA static u16 sRecipeBookPreviewItemId;
 EWRAM_DATA static u8 sRecipeBookPreviewVariantIndex;
@@ -527,6 +578,13 @@ static u8 sRecipeBookIngredientsView;
 static u8 sRecipeBookIngredientsViewCached;
 static bool8 sRecipeBookIngredientsDirty;
 static bool8 sRecipeBookIngredientsTilemapDirty;
+static u8 sRecipeBookExtendAnimId;
+static u8 sRecipeBookExtendAnimState;
+static u8 sRecipeBookPatternHideWindowId;
+static u16 sRecipeBookSavedWin0H;
+static u16 sRecipeBookSavedWin0V;
+static u16 sRecipeBookSavedWinIn;
+static u16 sRecipeBookSavedWinOut;
 EWRAM_DATA static u8 sRecipeBookVariantIndex[ITEMS_COUNT];
 static bool8 sRecipeBookEnterExtendedPending;
 static u16 sRecipeBookEnterExtendedVBlank;
@@ -567,6 +625,15 @@ static const struct BgTemplate sRecipeBookBgTemplates[] =
         .screenSize = 0,
         .paletteMode = 0,
         .priority = 2,
+        .baseTile = 0
+    },
+    {
+        .bg = 3,
+        .charBaseIndex = 2,
+        .mapBaseIndex = 28,
+        .screenSize = 0,
+        .paletteMode = 0,
+        .priority = 1,
         .baseTile = 0
     }
 };
@@ -619,6 +686,11 @@ static void CB2_CraftRecipeBookMenu(void)
         LoadBgTiles(2, gRecipeBookMenu_Gfx, RECIPEBOOK_BG_TILE_BYTES, 0);
         CopyToBgTilemapBuffer(2, gRecipeBookMenu_Tilemap, RECIPEBOOK_BG_TILEMAP_BYTES, 0);
         CopyBgTilemapBufferToVram(2);
+        SetBgTilemapBuffer(3, sRecipeBookBg3TilemapBuffer);
+        memset(sRecipeBookBg3TilemapBuffer, 0, sizeof(sRecipeBookBg3TilemapBuffer));
+        LoadBgTiles(3, gRecipeBookMenu_Gfx, RECIPEBOOK_BG_TILE_BYTES, 0);
+        CopyBgTilemapBufferToVram(3);
+        HideBg(3);
         LoadPalette(gRecipeBookMenu_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
         gMain.state++;
         break;
@@ -1363,6 +1435,78 @@ static void RecipeBook_RedrawListRow(u16 itemIndex, u8 row)
     CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
+static void RecipeBook_UpdateIngredientsHeaderOnly(void)
+{
+    u8 windowId = sRecipeBookWindowIds[RECIPEBOOK_WIN_INGREDIENTS];
+    const struct CraftRecipe *recipe;
+    u16 itemId;
+    u16 ingredientIds[RECIPEBOOK_INGREDIENTS_MAX];
+    u8 ingredientCounts[RECIPEBOOK_INGREDIENTS_MAX];
+    u8 ingredientCount;
+    u8 i;
+    bool8 canAutoCraft;
+    bool8 hasAllIngredients;
+    u8 headerFontId = FONT_NARROWER;
+    u8 headerY = RECIPEBOOK_INGREDIENTS_HEADER_Y + RECIPEBOOK_INGREDIENTS_TEXT_Y_OFFSET;
+    u32 windowWidth;
+    s16 headerX;
+    u8 copyMode;
+
+    if (windowId == WINDOW_NONE)
+        return;
+
+    itemId = RecipeBook_GetSelectedItemId();
+    recipe = RecipeBook_GetPreviewRecipe(itemId);
+
+    FillWindowPixelBuffer(windowId, PIXEL_FILL(0));
+
+    windowWidth = WindowWidthPx(windowId);
+    headerX = GetStringCenterAlignXOffset(headerFontId, sText_RecipeBookIngredients, windowWidth)
+            + RECIPEBOOK_INGREDIENTS_TEXT_X_OFFSET;
+    if (headerX < 0)
+        headerX = 0;
+
+    AddTextPrinterParameterized4(windowId, headerFontId, headerX, headerY, 0, 0,
+                                 sRecipeBookFontColorTable[RECIPEBOOK_COLOR_INGREDIENT_HEADER], TEXT_SKIP_DRAW,
+                                 sText_RecipeBookIngredients);
+
+    canAutoCraft = CraftLogic_IsAutoCraftEnabled();
+    hasAllIngredients = FALSE;
+    if (recipe != NULL)
+    {
+        ingredientCount = RecipeBook_BuildIngredientList(recipe, ingredientIds, ingredientCounts);
+        if (ingredientCount != 0)
+        {
+            hasAllIngredients = TRUE;
+            for (i = 0; i < ingredientCount; i++)
+            {
+                if (CountTotalItemQuantityInBag(ingredientIds[i]) < ingredientCounts[i])
+                {
+                    hasAllIngredients = FALSE;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (canAutoCraft && hasAllIngredients)
+    {
+        s16 iconX = headerX - GetStringWidth(headerFontId, sText_RecipeBookAButton, 0)
+                  - RECIPEBOOK_INGREDIENTS_HEADER_ICON_GAP;
+
+        if (iconX < 0)
+            iconX = 0;
+
+        AddTextPrinterParameterized4(windowId, headerFontId, iconX, headerY, 0, 0,
+                                     sRecipeBookFontColorTable[RECIPEBOOK_COLOR_INGREDIENT_HEADER], TEXT_SKIP_DRAW,
+                                     sText_RecipeBookAButton);
+    }
+
+    sRecipeBookIngredientsDirty = TRUE;
+    copyMode = sRecipeBookIngredientsTilemapDirty ? COPYWIN_FULL : COPYWIN_GFX;
+    CopyWindowToVram(windowId, copyMode);
+}
+
 static void RecipeBook_UpdateIngredientsWindow(void)
 {
     u8 windowId = sRecipeBookWindowIds[RECIPEBOOK_WIN_INGREDIENTS];
@@ -1378,6 +1522,12 @@ static void RecipeBook_UpdateIngredientsWindow(void)
     s16 headerX;
 
     if (windowId == WINDOW_NONE)
+        return;
+
+    if (sRecipeBookEnterExtendedPending)
+        return;
+
+    if (sRecipeBookExtendAnimState != RECIPEBOOK_EXTEND_ANIM_NONE)
         return;
 
     itemId = RecipeBook_GetSelectedItemId();
@@ -1915,9 +2065,86 @@ static void RecipeBook_HandleAutoCraftInput(void)
     }
 }
 
-static void RecipeBook_SetBgTilemap(const u32 *tilemap)
+static void RecipeBook_EnablePanelWindow(void)
 {
-    CopyToBgTilemapBuffer(2, tilemap, RECIPEBOOK_BG_TILEMAP_BYTES, 0);
+    u16 left = RECIPEBOOK_PANEL_TILEMAP_LEFT * 8;
+    u16 right = (RECIPEBOOK_PANEL_TILEMAP_LEFT + RECIPEBOOK_PANEL_TILEMAP_WIDTH) * 8;
+    u16 top = RECIPEBOOK_PANEL_TILEMAP_TOP * 8;
+    u16 bottom = (RECIPEBOOK_PANEL_TILEMAP_TOP + RECIPEBOOK_PANEL_TILEMAP_HEIGHT) * 8;
+
+    sRecipeBookSavedWin0H = GetGpuReg(REG_OFFSET_WIN0H);
+    sRecipeBookSavedWin0V = GetGpuReg(REG_OFFSET_WIN0V);
+    sRecipeBookSavedWinIn = GetGpuReg(REG_OFFSET_WININ);
+    sRecipeBookSavedWinOut = GetGpuReg(REG_OFFSET_WINOUT);
+
+    SetGpuReg(REG_OFFSET_WIN0H, (left << 8) | right);
+    SetGpuReg(REG_OFFSET_WIN0V, (top << 8) | bottom);
+    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);
+    SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR);
+    SetGpuReg(REG_OFFSET_DISPCNT, GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
+}
+
+static void RecipeBook_DisablePanelWindow(void)
+{
+    SetGpuReg(REG_OFFSET_WIN0H, sRecipeBookSavedWin0H);
+    SetGpuReg(REG_OFFSET_WIN0V, sRecipeBookSavedWin0V);
+    SetGpuReg(REG_OFFSET_WININ, sRecipeBookSavedWinIn);
+    SetGpuReg(REG_OFFSET_WINOUT, sRecipeBookSavedWinOut);
+    SetGpuReg(REG_OFFSET_DISPCNT, GetGpuReg(REG_OFFSET_DISPCNT) & ~DISPCNT_WIN0_ON);
+}
+
+static void RecipeBook_CopyPanelTilemapToBg3(const u32 *tilemap)
+{
+    u16 *dst = (u16 *)sRecipeBookBg3TilemapBuffer;
+    const u16 *src = (const u16 *)tilemap;
+    u8 y;
+
+    memset(sRecipeBookBg3TilemapBuffer, 0, sizeof(sRecipeBookBg3TilemapBuffer));
+
+    for (y = 0; y < RECIPEBOOK_PANEL_TILEMAP_HEIGHT; y++)
+    {
+        const u16 *srcRow = src + (RECIPEBOOK_PANEL_TILEMAP_TOP + y) * 32 + RECIPEBOOK_PANEL_TILEMAP_LEFT;
+        u16 *dstRow = dst + (RECIPEBOOK_PANEL_TILEMAP_TOP + y) * 32 + RECIPEBOOK_PANEL_TILEMAP_LEFT;
+
+        CpuCopy16(srcRow, dstRow, RECIPEBOOK_PANEL_TILEMAP_WIDTH * sizeof(u16));
+    }
+
+    CopyBgTilemapBufferToVram(3);
+}
+
+static void RecipeBook_ClearPanelOverlay(void)
+{
+    memset(sRecipeBookBg3TilemapBuffer, 0, sizeof(sRecipeBookBg3TilemapBuffer));
+    CopyBgTilemapBufferToVram(3);
+    ChangeBgY(3, 0, BG_COORD_SET);
+    HideBg(3);
+}
+
+static void RecipeBook_BlankPatternArea(void)
+{
+    FillBgTilemapBufferRect(2, RECIPEBOOK_PATTERN_CLEAR_TILE,
+                            RECIPEBOOK_PATTERN_CLEAR_LEFT,
+                            RECIPEBOOK_PATTERN_CLEAR_TOP,
+                            RECIPEBOOK_PATTERN_CLEAR_WIDTH,
+                            RECIPEBOOK_PATTERN_CLEAR_HEIGHT,
+                            0);
+    CopyBgTilemapBufferToVram(2);
+}
+
+static void RecipeBook_RestorePatternArea(void)
+{
+    u16 *dst = (u16 *)sRecipeBookBg2TilemapBuffer;
+    const u16 *src = (const u16 *)gRecipeBookMenu_Tilemap;
+    u8 y;
+
+    for (y = 0; y < RECIPEBOOK_PATTERN_CLEAR_HEIGHT; y++)
+    {
+        const u16 *srcRow = src + (RECIPEBOOK_PATTERN_CLEAR_TOP + y) * 32 + RECIPEBOOK_PATTERN_CLEAR_LEFT;
+        u16 *dstRow = dst + (RECIPEBOOK_PATTERN_CLEAR_TOP + y) * 32 + RECIPEBOOK_PATTERN_CLEAR_LEFT;
+
+        CpuCopy16(srcRow, dstRow, RECIPEBOOK_PATTERN_CLEAR_WIDTH * sizeof(u16));
+    }
+
     CopyBgTilemapBufferToVram(2);
 }
 
@@ -1938,12 +2165,131 @@ static void RecipeBook_ResetIngredientsWindow(const struct WindowTemplate *templ
     sRecipeBookIngredientsTilemapDirty = TRUE;
 }
 
+static void RecipeBook_ShowPatternHideWindow(void)
+{
+    if (sRecipeBookPatternHideWindowId != WINDOW_NONE)
+        return;
+
+    sRecipeBookPatternHideWindowId = AddWindow(&sRecipeBookPatternHideWindowTemplate);
+    FillWindowPixelBuffer(sRecipeBookPatternHideWindowId, PIXEL_FILL(0));
+    PutWindowTilemap(sRecipeBookPatternHideWindowId);
+    CopyWindowToVram(sRecipeBookPatternHideWindowId, COPYWIN_FULL);
+}
+
+static void RecipeBook_HidePatternHideWindow(void)
+{
+    if (sRecipeBookPatternHideWindowId == WINDOW_NONE)
+        return;
+
+    ClearWindowTilemap(sRecipeBookPatternHideWindowId);
+    CopyWindowToVram(sRecipeBookPatternHideWindowId, COPYWIN_MAP);
+    RemoveWindow(sRecipeBookPatternHideWindowId);
+    sRecipeBookPatternHideWindowId = WINDOW_NONE;
+}
+
+static void RecipeBook_FinishExtendAnim(u8 animState)
+{
+    RecipeBook_StopExtendAnim();
+
+    if (animState == RECIPEBOOK_EXTEND_ANIM_EXPAND)
+    {
+        sRecipeBookIngredientsDirty = TRUE;
+        RecipeBook_UpdateIngredientsWindow();
+    }
+    else if (animState == RECIPEBOOK_EXTEND_ANIM_COLLAPSE)
+    {
+        RecipeBook_ClearPanelOverlay();
+        RecipeBook_RestorePatternArea();
+        RecipeBook_HidePatternHideWindow();
+        sRecipeBookIngredientsView = RECIPEBOOK_VIEW_NORMAL;
+        RecipeBook_ResetIngredientsWindow(&sRecipeBookWindowTemplates[RECIPEBOOK_WIN_INGREDIENTS]);
+        RecipeBook_ClearPatternIcons();
+        sRecipeBookPreviewItemId = ITEM_NONE;
+        sRecipeBookPreviewVariantIndex = 0;
+        sRecipeBookPendingItemId = ITEM_NONE;
+        sRecipeBookPendingVariantIndex = 0;
+        sRecipeBookPatternDelay = 0;
+        RecipeBook_UpdatePatternPreview();
+        RecipeBook_UpdateIngredientsWindow();
+    }
+}
+
+static void RecipeBook_StartExtendAnim(u8 animState)
+{
+    struct ComfyAnimEasingConfig config;
+
+    if (sRecipeBookExtendAnimId != INVALID_COMFY_ANIM)
+        ReleaseComfyAnim(sRecipeBookExtendAnimId);
+
+    InitComfyAnimConfig_Easing(&config);
+    config.durationFrames = RECIPEBOOK_EXTEND_ANIM_DURATION_FRAMES;
+    config.delayFrames = 0;
+    if (animState == RECIPEBOOK_EXTEND_ANIM_COLLAPSE)
+    {
+        config.from = Q_24_8(0);
+        config.to = Q_24_8(RECIPEBOOK_EXTEND_ANIM_OFFSET_PIXELS);
+        config.easingFunc = ComfyAnimEasing_EaseInCubic;
+    }
+    else
+    {
+        config.from = Q_24_8(RECIPEBOOK_EXTEND_ANIM_OFFSET_PIXELS);
+        config.to = Q_24_8(0);
+        config.easingFunc = ComfyAnimEasing_EaseOutCubic;
+        RecipeBook_CopyPanelTilemapToBg3(gRecipeBookMenuExtended_Tilemap);
+        ShowBg(3);
+    }
+    sRecipeBookExtendAnimId = CreateComfyAnim_Easing(&config);
+    sRecipeBookExtendAnimState = (sRecipeBookExtendAnimId != INVALID_COMFY_ANIM) ? animState : RECIPEBOOK_EXTEND_ANIM_NONE;
+    ChangeBgY(3, config.from, BG_COORD_SET);
+
+    if (sRecipeBookExtendAnimState == RECIPEBOOK_EXTEND_ANIM_NONE)
+        RecipeBook_FinishExtendAnim(animState);
+}
+
+static void RecipeBook_StopExtendAnim(void)
+{
+    if (sRecipeBookExtendAnimId != INVALID_COMFY_ANIM)
+        ReleaseComfyAnim(sRecipeBookExtendAnimId);
+
+    sRecipeBookExtendAnimId = INVALID_COMFY_ANIM;
+    sRecipeBookExtendAnimState = RECIPEBOOK_EXTEND_ANIM_NONE;
+    ChangeBgY(3, 0, BG_COORD_SET);
+}
+
+static void RecipeBook_TickExtendAnim(void)
+{
+    struct ComfyAnim *anim;
+    u8 animState;
+
+    if (sRecipeBookExtendAnimState == RECIPEBOOK_EXTEND_ANIM_NONE)
+        return;
+
+    if (sRecipeBookExtendAnimId >= NUM_COMFY_ANIMS || !gComfyAnims[sRecipeBookExtendAnimId].inUse)
+    {
+        animState = sRecipeBookExtendAnimState;
+        RecipeBook_FinishExtendAnim(animState);
+        return;
+    }
+
+    anim = &gComfyAnims[sRecipeBookExtendAnimId];
+    TryAdvanceComfyAnim(anim);
+    ChangeBgY(3, anim->position, BG_COORD_SET);
+
+    if (anim->completed)
+    {
+        animState = sRecipeBookExtendAnimState;
+        RecipeBook_FinishExtendAnim(animState);
+    }
+}
+
 static void RecipeBook_EnterExtendedIngredientsView(void)
 {
     if (sRecipeBookIngredientsView == RECIPEBOOK_VIEW_EXTENDED)
         return;
 
     sRecipeBookIngredientsView = RECIPEBOOK_VIEW_EXTENDED;
+    RecipeBook_StopExtendAnim();
+    RecipeBook_ShowPatternHideWindow();
     RecipeBook_ClearPatternIcons();
     sRecipeBookPreviewItemId = ITEM_NONE;
     sRecipeBookPreviewVariantIndex = 0;
@@ -1958,18 +2304,14 @@ static void RecipeBook_ExitExtendedIngredientsView(void)
 {
     if (sRecipeBookIngredientsView == RECIPEBOOK_VIEW_NORMAL)
         return;
+    if (sRecipeBookExtendAnimState == RECIPEBOOK_EXTEND_ANIM_COLLAPSE)
+        return;
 
-    sRecipeBookIngredientsView = RECIPEBOOK_VIEW_NORMAL;
-    RecipeBook_SetBgTilemap(gRecipeBookMenu_Tilemap);
-    RecipeBook_ResetIngredientsWindow(&sRecipeBookWindowTemplates[RECIPEBOOK_WIN_INGREDIENTS]);
-    RecipeBook_ClearPatternIcons();
-    sRecipeBookPreviewItemId = ITEM_NONE;
-    sRecipeBookPreviewVariantIndex = 0;
-    sRecipeBookPendingItemId = ITEM_NONE;
-    sRecipeBookPendingVariantIndex = 0;
-    sRecipeBookPatternDelay = 0;
-    RecipeBook_UpdatePatternPreview();
-    RecipeBook_UpdateIngredientsWindow();
+    RecipeBook_StopExtendAnim();
+    sRecipeBookEnterExtendedPending = FALSE;
+    RecipeBook_UpdateIngredientsHeaderOnly();
+    RecipeBook_BlankPatternArea();
+    RecipeBook_StartExtendAnim(RECIPEBOOK_EXTEND_ANIM_COLLAPSE);
 }
 
 static void RecipeBook_DestroyPatternIcons(void)
@@ -2212,6 +2554,9 @@ static void RecipeBook_Init(void)
     sRecipeBookIngredientsViewCached = sRecipeBookIngredientsView;
     sRecipeBookIngredientsDirty = TRUE;
     sRecipeBookIngredientsTilemapDirty = FALSE;
+    sRecipeBookExtendAnimId = INVALID_COMFY_ANIM;
+    sRecipeBookExtendAnimState = RECIPEBOOK_EXTEND_ANIM_NONE;
+    sRecipeBookPatternHideWindowId = WINDOW_NONE;
     sRecipeBookEnterExtendedPending = FALSE;
     sRecipeBookEnterExtendedVBlank = 0;
     memset(sRecipeBookVariantIndex, 0, sizeof(sRecipeBookVariantIndex));
@@ -2225,6 +2570,7 @@ static void RecipeBook_Init(void)
     sRecipeBookAutoCraftQty = 0;
     sRecipeBookAutoCraftMaxQty = 0;
     RecipeBook_DisableTimeOfDayBlend();
+    RecipeBook_EnablePanelWindow();
 
     RecipeBook_BuildPocketList();
     RecipeBook_InitWindows();
@@ -2253,13 +2599,18 @@ static void RecipeBook_Cleanup(void)
     sRecipeBookAutoCraftItemId = ITEM_NONE;
     sRecipeBookAutoCraftQty = 0;
     sRecipeBookAutoCraftMaxQty = 0;
+    RecipeBook_StopExtendAnim();
+    RecipeBook_ClearPanelOverlay();
+    RecipeBook_HidePatternHideWindow();
     RecipeBook_DestroyWindows();
     RecipeBook_DestroyPocketSwitchArrows();
     RecipeBook_DestroyListScrollArrows();
     RecipeBook_DestroyPatternIcons();
     RecipeBook_RestoreTimeOfDayBlend();
+    RecipeBook_DisablePanelWindow();
     UnsetBgTilemapBuffer(1);
     UnsetBgTilemapBuffer(2);
+    UnsetBgTilemapBuffer(3);
 }
 
 static void CraftMenu_ReshowAfterBagMenu(void)
@@ -2292,6 +2643,9 @@ static void Task_RecipeBookMenu(u8 taskId)
             gTasks[taskId].data[0]++;
         break;
     case 2:
+        RecipeBook_TickExtendAnim();
+        if (sRecipeBookExtendAnimState != RECIPEBOOK_EXTEND_ANIM_NONE)
+            break;
         if (sRecipeBookAutoCraftState != RECIPEBOOK_AUTO_CRAFT_STATE_NONE)
         {
             RecipeBook_HandleAutoCraftInput();
@@ -2318,9 +2672,10 @@ static void Task_RecipeBookMenu(u8 taskId)
                 if (gMain.vblankCounter1 != sRecipeBookEnterExtendedVBlank)
                 {
                     sRecipeBookEnterExtendedPending = FALSE;
-                    RecipeBook_SetBgTilemap(gRecipeBookMenuExtended_Tilemap);
                     RecipeBook_ResetIngredientsWindow(&sRecipeBookIngredientsWindowTemplateExtended);
-                    RecipeBook_UpdateIngredientsWindow();
+                    RecipeBook_UpdateIngredientsHeaderOnly();
+                    RecipeBook_BlankPatternArea();
+                    RecipeBook_StartExtendAnim(RECIPEBOOK_EXTEND_ANIM_EXPAND);
                 }
                 break;
             }

@@ -123,7 +123,7 @@ static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
         },
         .count = 1,
     },
-    /*[ITEM_ACRO_BIKE] =
+    [ITEM_ACRO_BIKE] =
     {
         .recipes = (const struct CraftRecipe[])
         {
@@ -138,7 +138,7 @@ static const struct CraftRecipeList gCraftRecipes[ITEMS_COUNT] =
             },
         },
         .count = 1,
-    },*/
+    },
     [ITEM_MASTERPIECE_TEACUP] =
     {
         .recipes = (const struct CraftRecipe[])
