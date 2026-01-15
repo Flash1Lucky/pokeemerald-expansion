@@ -1728,6 +1728,7 @@ const u32 gBagScreen_GfxTileMap[] = INCBIN_U32("graphics/bag/menu.bin.smolTM");
 const u16 gRecipeBookMenu_Pal[] = INCBIN_U16("graphics/crafting/recipe_book_menu.gbapal");
 const u32 gRecipeBookMenu_Gfx[] = INCBIN_U32("graphics/crafting/recipe_book_menu.4bpp");
 const u32 gRecipeBookMenu_Tilemap[] = INCBIN_U32("graphics/crafting/recipe_book_menu.bin");
+const u32 gRecipeBookMenuExtended_Tilemap[] = INCBIN_U32("graphics/crafting/recipe_book_menu_extended.bin");
 
 const u32 gBattlePyramidBag_Gfx[]          = INCBIN_U32("graphics/bag/bag_pyramid.4bpp.smol");
 const u16 gBattlePyramidBag_Pal[]          = INCBIN_U16("graphics/bag/bag_pyramid.gbapal"); // female palette is first and male is second.

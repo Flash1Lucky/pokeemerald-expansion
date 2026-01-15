@@ -33,5 +33,6 @@ u16 CraftLogic_GetCraftableQuantity(const struct CraftRecipe *recipe);
 
 u16 CraftLogic_Craft(const struct CraftRecipeList *recipes, u16 recipeCount);
 bool8 CraftLogic_CanCraft(const struct CraftRecipeList *recipes, u16 recipeCount);
+bool8 CraftLogic_IsAutoCraftEnabled(void);
 
 #endif // GUARD_CRAFT_LOGIC_H

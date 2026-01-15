@@ -1,5 +1,6 @@
 #include "global.h"
 #include "constants/items.h"
+#include "config/crafting.h"
 #include "craft_logic.h"
 #include "data/crafting_recipes.h"
 #include "event_data.h"
@@ -272,4 +273,14 @@ bool8 CraftLogic_CanCraft(const struct CraftRecipeList *recipes, u16 recipeCount
     const struct CraftRecipe *recipe = CraftLogic_GetMatchingRecipe(recipes, recipeCount, &itemId);
 
     return (recipe != NULL);
+}
+
+bool8 CraftLogic_IsAutoCraftEnabled(void)
+{
+    if (CRAFT_AUTO_CRAFT_MODE == CRAFT_AUTO_CRAFT_ALWAYS)
+        return TRUE;
+    if (CRAFT_AUTO_CRAFT_MODE == CRAFT_AUTO_CRAFT_AFTER_FLAG)
+        return (CRAFT_AUTO_CRAFT_FLAG != 0 && FlagGet(CRAFT_AUTO_CRAFT_FLAG));
+
+    return FALSE;
 }

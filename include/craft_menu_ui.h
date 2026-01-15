@@ -4,6 +4,8 @@
 #include "global.h"
 #include "task.h"
 
+extern const u8 gText_CraftConfirm[];
+
 void CraftMenuUI_Init(void);
 void CraftMenuUI_UpdateGrid(void);
 void CraftMenuUI_DrawIcons(void);
