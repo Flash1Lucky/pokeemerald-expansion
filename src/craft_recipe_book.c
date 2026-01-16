@@ -392,7 +392,7 @@ static const struct ScrollArrowsTemplate sRecipeBookListScrollArrowTemplate =
 static const struct ListMenuTemplate sRecipeBookListMenuTemplate =
 {
     .items = NULL,
-    .moveCursorFunc = NULL,
+    .moveCursorFunc = ListMenuDefaultCursorMoveFunc,
     .itemPrintFunc = RecipeBook_PrintListItem,
     .totalItems = 0,
     .maxShowed = 6,
@@ -2481,7 +2481,6 @@ static void Task_RecipeBookMenu(u8 taskId)
         ShowBg(0);
         ShowBg(1);
         ShowBg(2);
-        PlaySE(SE_DEX_PAGE);
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
         gTasks[taskId].data[0]++;
         break;
@@ -2691,4 +2690,3 @@ static void Task_RecipeBookMenu(u8 taskId)
 #undef tPocketSwitchDir
 #undef tPocketSwitchTarget
 }
-
