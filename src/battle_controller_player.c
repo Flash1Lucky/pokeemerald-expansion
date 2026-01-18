@@ -1711,6 +1711,14 @@ static const u8 sMoveDescNeutralColors[3] = {14, TEXT_DYNAMIC_COLOR_4, TEXT_DYNA
 static const u8 sMoveDescPositiveColors[3] = {14, TEXT_COLOR_GREEN, TEXT_COLOR_LIGHT_RED};
 static const u8 sMoveDescNegativeColors[3] = {14, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY};
 
+static u8 *AppendMoveDescColors(u8 *dest, const u8 *colors)
+{
+    dest = WriteColorChangeControlCode(dest, 0, colors[1]);
+    dest = WriteColorChangeControlCode(dest, 2, colors[0]);
+    dest = WriteColorChangeControlCode(dest, 1, colors[2]);
+    return dest;
+}
+
 
 static void TryMoveSelectionDisplayMoveDescription(u32 battler)
 {
@@ -1776,29 +1784,15 @@ static void MoveSelectionDisplayMoveDescription(u32 battler)
             acc = 100;
     }
 
-    u8 pwr_num[3], acc_num[3];
+    u8 pwr_num[4], acc_num[4];
     u8 cat_desc[7] = _("CAT: ");
     u8 pwr_desc[7] = _("PWR: ");
     u8 acc_desc[7] = _("ACC: ");
     u8 cat_start[] = _("{CLEAR_TO 0x03}");
     u8 pwr_start[] = _("{CLEAR_TO 0x34}");
     u8 acc_start[] = _("{CLEAR_TO 0x6D}");
-
-    // Prepare the main description text for B_WIN_MOVE_DESCRIPTION
-    StringCopy(gDisplayedStringBattle, cat_start);
-    StringAppend(gDisplayedStringBattle, cat_desc);
-    StringAppend(gDisplayedStringBattle, pwr_start);
-    StringAppend(gDisplayedStringBattle, pwr_desc);
-    StringAppend(gDisplayedStringBattle, acc_start);
-    StringAppend(gDisplayedStringBattle, acc_desc);
-    StringAppend(gDisplayedStringBattle, gText_NewLine);
-    StringAppend(gDisplayedStringBattle, GetMoveDescription(displayMove));
-
-    // Draw the main description box with a border
-    LoadMessageBoxAndBorderGfx();
-    DrawStdWindowFrame(B_WIN_MOVE_DESCRIPTION, FALSE);
-    BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_DESCRIPTION);
-    CopyWindowToVram(B_WIN_MOVE_DESCRIPTION, COPYWIN_FULL);
+    u8 pwr_value_start[] = _("{CLEAR_TO 0x4A}");
+    u8 acc_value_start[] = _("{CLEAR_TO 0x82}");
 
     // Display power
     if (pwr < 2) // Status move or no power
@@ -1837,17 +1831,36 @@ static void MoveSelectionDisplayMoveDescription(u32 battler)
             accColors = sMoveDescNegativeColors;
     }
 
-    // Print values inside the description window
-    AddTextPrinterParameterized3(B_WIN_MOVE_DESCRIPTION, FONT_NARROW, 76, 1, pwrColors, 0, pwr_num);
-    AddTextPrinterParameterized3(B_WIN_MOVE_DESCRIPTION, FONT_NARROW, 128, 1, accColors, 0, acc_num);
+    // Prepare the main description text for B_WIN_MOVE_DESCRIPTION
+    u8 *txtPtr = gDisplayedStringBattle;
+
+    txtPtr = StringCopy(txtPtr, cat_start);
+    txtPtr = StringCopy(txtPtr, cat_desc);
+    txtPtr = StringCopy(txtPtr, pwr_start);
+    txtPtr = StringCopy(txtPtr, pwr_desc);
+    txtPtr = StringCopy(txtPtr, pwr_value_start);
+    txtPtr = AppendMoveDescColors(txtPtr, pwrColors);
+    txtPtr = StringCopy(txtPtr, pwr_num);
+    txtPtr = AppendMoveDescColors(txtPtr, sMoveDescNeutralColors);
+    txtPtr = StringCopy(txtPtr, acc_start);
+    txtPtr = StringCopy(txtPtr, acc_desc);
+    txtPtr = StringCopy(txtPtr, acc_value_start);
+    txtPtr = AppendMoveDescColors(txtPtr, accColors);
+    txtPtr = StringCopy(txtPtr, acc_num);
+    txtPtr = AppendMoveDescColors(txtPtr, sMoveDescNeutralColors);
+    txtPtr = StringCopy(txtPtr, gText_NewLine);
+    StringCopy(txtPtr, GetMoveDescription(displayMove));
+
+    // Draw the main description box with a border
+    LoadMessageBoxAndBorderGfx();
+    DrawStdWindowFrame(B_WIN_MOVE_DESCRIPTION, FALSE);
+    BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_DESCRIPTION);
 
     // Draw the category icon as usual
     if (gCategoryIconSpriteId == 0xFF)
         gCategoryIconSpriteId = CreateSprite(&gSpriteTemplate_CategoryIcons, 38, 64, 1);
 
     StartSpriteAnim(&gSprites[gCategoryIconSpriteId], cat);
-
-    CopyWindowToVram(B_WIN_MOVE_DESCRIPTION, COPYWIN_FULL);
 }
 
 void MoveSelectionCreateCursorAt(u8 cursorPosition, u8 baseTileNum)
