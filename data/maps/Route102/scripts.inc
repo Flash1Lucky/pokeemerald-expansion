@@ -15,7 +15,6 @@ Route102_EventScript_RouteSignPetalburg::
 	end
 
 Route102_OnTransition::
-	call_if_ne VAR_ROUTE102_STATE 3, Route102_EventScript_Boy_CraftingTutorialPos
 	end
 
 Route102_EventScript_Boy_CraftingTutorialPos::
@@ -24,7 +23,6 @@ Route102_EventScript_Boy_CraftingTutorialPos::
 	return
 
 Route102_EventScript_Boy::
-	goto_if_ne VAR_ROUTE102_STATE, 0, CraftTutorial_EventScript_BoyDialogue
 	msgbox Route102_Text_CatchWholeBunchOfPokemon, MSGBOX_NPC
 	end
 
