@@ -8,6 +8,7 @@
 #include "battle_controllers.h"
 #include "battle_factory.h"
 #include "battle_setup.h"
+#include "battle_info.h"
 #include "battle_z_move.h"
 #include "battle_terastal.h"
 #include "data.h"
@@ -515,6 +516,8 @@ void Ai_UpdateSwitchInData(u32 battler)
         ClearBattlerItemEffectHistory(battler);
         CopyBattlerDataToAIParty(GetBattlerPosition(battler), side);
     }
+
+    BattleInfo_RecordSwitchIn(battler);
 }
 
 void Ai_UpdateFaintData(u32 battler)
@@ -524,6 +527,7 @@ void Ai_UpdateFaintData(u32 battler)
     ClearBattlerAbilityHistory(battler);
     ClearBattlerItemEffectHistory(battler);
     aiMon->isFainted = TRUE;
+    BattleInfo_RecordFaint(battler);
 }
 
 void RecordMovesBasedOnStab(u32 battler)

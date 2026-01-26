@@ -562,6 +562,32 @@ struct LostItem
     u16 stolen:1;
 };
 
+struct BattleInfoMon
+{
+    u16 species;
+    u32 personality;
+    u32 status1;
+    u16 itemId;
+    u16 knownMoves[MAX_MON_MOVES];
+    u8 hpFraction;
+    u8 gender:2;
+    u8 shiny:1;
+    u8 seen:1;
+    u8 fainted:1;
+    u8 padding:3;
+    u8 ppUsed[MAX_MON_MOVES];
+};
+
+struct BattleInfoState
+{
+    struct BattleInfoMon mon[NUM_BATTLE_SIDES][PARTY_SIZE];
+    u8 tab;
+    u8 enemySlot;
+    u8 fieldPage;
+    u8 seenOrder[NUM_BATTLE_SIDES][PARTY_SIZE];
+    u8 seenOrderCount[NUM_BATTLE_SIDES];
+};
+
 struct BattleVideo {
     u32 battleTypeFlags;
     rng_value_t rngSeed;
@@ -738,6 +764,7 @@ struct BattleStruct
     u8 throwingPokeBall:1;
     u8 ballSpriteIds[2];    // item gfx, window gfx
     u8 moveInfoSpriteId; // move info, window gfx
+    u8 battleInfoHintSpriteId;
     u8 skyDropTargets[MAX_BATTLERS_COUNT]; // For Sky Drop, to account for if multiple Pokemon use Sky Drop in a double battle.
     // When using a move which hits multiple opponents which is then bounced by a target, we need to make sure, the move hits both opponents, the one with bounce, and the one without.
     u16 beatUpSpecies[PARTY_SIZE]; // Species for Gen5+ Beat Up, otherwise party indexes
@@ -788,6 +815,7 @@ struct BattleStruct
     u8 incrementEchoedVoice:1;
     u8 echoedVoiceCounter:3;
     u8 padding3:4;
+    struct BattleInfoState battleInfo;
 };
 
 struct AiBattleData

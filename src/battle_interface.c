@@ -207,6 +207,10 @@ static void Task_FreeAbilityPopUpGfx(u8);
 static void SpriteCB_LastUsedBall(struct Sprite *);
 static void SpriteCB_LastUsedBallWin(struct Sprite *);
 static void SpriteCB_MoveInfoWin(struct Sprite *sprite);
+static void SpriteCB_BattleInfoHint(struct Sprite *sprite);
+static void DestroyBattleInfoHintSprites(void);
+
+static EWRAM_DATA bool8 sBattleInfoHintHide = FALSE;
 
 static const struct OamData sOamData_64x32 =
 {
@@ -729,6 +733,8 @@ u8 CreateBattlerHealthboxSprites(u8 battler)
     gBattleStruct->ballSpriteIds[0] = MAX_SPRITES;
     gBattleStruct->ballSpriteIds[1] = MAX_SPRITES;
     gBattleStruct->moveInfoSpriteId = MAX_SPRITES;
+    gBattleStruct->battleInfoHintSpriteId = MAX_SPRITES;
+    sBattleInfoHintHide = TRUE;
 
     return healthboxLeftSpriteId;
 }
@@ -2830,6 +2836,7 @@ static const struct SpriteTemplate sSpriteTemplate_LastUsedBallWindow =
 };
 
 #define MOVE_INFO_WINDOW_TAG 0xE722
+#define BATTLE_INFO_HINT_TILE_TAG 0xE723
 
 static const struct OamData sOamData_MoveInfoWindow =
 {
@@ -2859,6 +2866,34 @@ static const struct SpriteTemplate sSpriteTemplate_MoveInfoWindow =
     .callback = SpriteCB_MoveInfoWin
 };
 
+static const struct OamData sOamData_BattleInfoHint =
+{
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .mosaic = 0,
+    .bpp = 0,
+    .shape = SPRITE_SHAPE(32x32),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(32x32),
+    .tileNum = 0,
+    .priority = 1,
+    .paletteNum = 0,
+    .affineParam = 0,
+};
+
+static const struct SpriteTemplate sSpriteTemplate_BattleInfoHint =
+{
+    .tileTag = BATTLE_INFO_HINT_TILE_TAG,
+    .paletteTag = TAG_ABILITY_POP_UP,
+    .oam = &sOamData_BattleInfoHint,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCB_BattleInfoHint
+};
+
 #if B_LAST_USED_BALL_BUTTON == R_BUTTON && B_LAST_USED_BALL_CYCLE == TRUE
     static const u8 ALIGNED(4) sLastUsedBallWindowGfx[] = INCBIN_U8("graphics/battle_interface/last_used_ball_r_cycle.4bpp");
 #elif B_LAST_USED_BALL_CYCLE == TRUE
@@ -2879,9 +2914,20 @@ static const u8 sMoveInfoWindowGfx[] = INCBIN_U8("graphics/battle_interface/move
 static const u8 sMoveInfoWindowGfx[] = INCBIN_U8("graphics/battle_interface/move_info_window_l.4bpp");
 #endif
 
+#if B_BATTLE_INFO_BUTTON == R_BUTTON
+static const u8 sBattleInfoWindowGfx[] = INCBIN_U8("graphics/battle_interface/battle_info_window_r.4bpp");
+#else
+static const u8 sBattleInfoWindowGfx[] = INCBIN_U8("graphics/battle_interface/battle_info_window_l.4bpp");
+#endif
+
 static const struct SpriteSheet sSpriteSheet_MoveInfoWindow =
 {
     sMoveInfoWindowGfx, sizeof(sMoveInfoWindowGfx), MOVE_INFO_WINDOW_TAG
+};
+
+static const struct SpriteSheet sSpriteSheet_BattleInfoWindow =
+{
+    sBattleInfoWindowGfx, sizeof(sBattleInfoWindowGfx), BATTLE_INFO_HINT_TILE_TAG
 };
 
 #define LAST_USED_BALL_X_F    14
@@ -2892,6 +2938,9 @@ static const struct SpriteSheet sSpriteSheet_MoveInfoWindow =
 #define LAST_BALL_WIN_X_F       (LAST_USED_BALL_X_F - 0)
 #define LAST_BALL_WIN_X_0       (LAST_USED_BALL_X_0 - 0)
 #define LAST_USED_WIN_Y         (LAST_USED_BALL_Y - 8)
+#define BATTLE_INFO_HINT_X_F    (LAST_USED_BALL_X_F - 0)
+#define BATTLE_INFO_HINT_X_0    (LAST_USED_BALL_X_0 - 0)
+#define BATTLE_INFO_HINT_Y      (LAST_USED_WIN_Y + 32)
 
 #define sHide  data[0]
 #define sTimer  data[1]
@@ -2968,7 +3017,8 @@ void TryAddLastUsedBallItemSprites(void)
 static void DestroyLastUsedBallWinGfx(struct Sprite *sprite)
 {
     FreeSpriteTilesByTag(TAG_LAST_BALL_WINDOW);
-    if (GetSpriteTileStartByTag(MOVE_INFO_WINDOW_TAG) == 0xFFFF)
+    if (GetSpriteTileStartByTag(MOVE_INFO_WINDOW_TAG) == 0xFFFF
+        && GetSpriteTileStartByTag(BATTLE_INFO_HINT_TILE_TAG) == 0xFFFF)
         FreeSpritePaletteByTag(TAG_ABILITY_POP_UP);
     DestroySprite(sprite);
     gBattleStruct->ballSpriteIds[1] = MAX_SPRITES;
@@ -2998,15 +3048,43 @@ void TryToAddMoveInfoWindow(void)
     }
 }
 
+void TryToAddBattleInfoHint(void)
+{
+    struct SpriteTemplate temp;
+
+    if (gBattleStruct->battleInfoHintSpriteId != MAX_SPRITES)
+    {
+        sBattleInfoHintHide = FALSE;
+        return;
+    }
+
+    LoadSpritePalette(&sSpritePalette_AbilityPopUp);
+    if (GetSpriteTileStartByTag(BATTLE_INFO_HINT_TILE_TAG) == 0xFFFF)
+        LoadSpriteSheet(&sSpriteSheet_BattleInfoWindow);
+
+    temp = sSpriteTemplate_BattleInfoHint;
+    gBattleStruct->battleInfoHintSpriteId = CreateSprite(&temp, BATTLE_INFO_HINT_X_0, BATTLE_INFO_HINT_Y, 6);
+    sBattleInfoHintHide = FALSE;
+}
+
 void TryToHideMoveInfoWindow(void)
 {
     gSprites[gBattleStruct->moveInfoSpriteId].sHide = TRUE;
 }
 
+void TryToHideBattleInfoHint(void)
+{
+    if (gBattleStruct->battleInfoHintSpriteId == MAX_SPRITES)
+        return;
+
+    sBattleInfoHintHide = TRUE;
+}
+
 static void DestroyMoveInfoWinGfx(struct Sprite *sprite)
 {
     FreeSpriteTilesByTag(MOVE_INFO_WINDOW_TAG);
-    if (GetSpriteTileStartByTag(TAG_LAST_BALL_WINDOW) == 0xFFFF)
+    if (GetSpriteTileStartByTag(TAG_LAST_BALL_WINDOW) == 0xFFFF
+        && GetSpriteTileStartByTag(BATTLE_INFO_HINT_TILE_TAG) == 0xFFFF)
         FreeSpritePaletteByTag(TAG_ABILITY_POP_UP);
     DestroySprite(sprite);
     gBattleStruct->moveInfoSpriteId = MAX_SPRITES;
@@ -3064,6 +3142,37 @@ static void SpriteCB_MoveInfoWin(struct Sprite *sprite)
         if (sprite->x != LAST_BALL_WIN_X_F)
             sprite->x++;
     }
+}
+
+static void SpriteCB_BattleInfoHint(struct Sprite *sprite)
+{
+    if (sBattleInfoHintHide)
+    {
+        if (sprite->x > BATTLE_INFO_HINT_X_0)
+            sprite->x--;
+
+        if (sprite->x <= BATTLE_INFO_HINT_X_0)
+            DestroyBattleInfoHintSprites();
+    }
+    else
+    {
+        if (sprite->x < BATTLE_INFO_HINT_X_F)
+            sprite->x++;
+    }
+}
+
+static void DestroyBattleInfoHintSprites(void)
+{
+    if (gBattleStruct->battleInfoHintSpriteId != MAX_SPRITES)
+    {
+        DestroySprite(&gSprites[gBattleStruct->battleInfoHintSpriteId]);
+        FreeSpriteTilesByTag(BATTLE_INFO_HINT_TILE_TAG);
+        gBattleStruct->battleInfoHintSpriteId = MAX_SPRITES;
+    }
+
+    if (GetSpriteTileStartByTag(MOVE_INFO_WINDOW_TAG) == 0xFFFF
+        && GetSpriteTileStartByTag(TAG_LAST_BALL_WINDOW) == 0xFFFF)
+        FreeSpritePaletteByTag(TAG_ABILITY_POP_UP);
 }
 
 static void TryHideOrRestoreLastUsedBall(u8 caseId)

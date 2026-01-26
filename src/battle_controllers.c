@@ -10,6 +10,7 @@
 #include "battle_message.h"
 #include "battle_setup.h"
 #include "battle_tv.h"
+#include "battle_info.h"
 #include "cable_club.h"
 #include "event_object_movement.h"
 #include "item.h"
@@ -2607,6 +2608,7 @@ void BtlController_HandleHealthBarUpdate(u32 battler)
         TestRunner_Battle_RecordHP(battler, curHP, 0);
     }
 
+    BattleInfo_RecordHp(battler);
     gBattlerControllerFuncs[battler] = Controller_WaitForHealthBar;
 }
 
@@ -2616,6 +2618,7 @@ void DoStatusIconUpdate(u32 battler)
 
     UpdateHealthboxAttribute(gHealthboxSpriteIds[battler], mon, HEALTHBOX_STATUS_ICON);
     gBattleSpritesDataPtr->healthBoxesData[battler].statusAnimActive = 0;
+    BattleInfo_RecordStatus(battler);
     gBattlerControllerFuncs[battler] = Controller_WaitForStatusAnimation;
 }
 

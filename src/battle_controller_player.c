@@ -4,6 +4,7 @@
 #include "battle_arena.h"
 #include "battle_controllers.h"
 #include "battle_dome.h"
+#include "battle_info.h"
 #include "battle_interface.h"
 #include "battle_message.h"
 #include "battle_setup.h"
@@ -75,6 +76,7 @@ static void PlayerHandleLinkStandbyMsg(u32 battler);
 static void PlayerHandleResetActionMoveSelection(u32 battler);
 static void PlayerHandleEndLinkBattle(u32 battler);
 static void PlayerHandleBattleDebug(u32 battler);
+static void Controller_WaitForBattleInfo(u32 battler);
 
 static void PlayerBufferRunCommand(u32 battler);
 static void MoveSelectionDisplayPpNumber(u32 battler);
@@ -96,6 +98,19 @@ static void ReloadMoveNames(u32 battler);
 static u32 CheckTypeEffectiveness(u32 battlerAtk, u32 battlerDef);
 static u32 CheckTargetTypeEffectiveness(u32 battler);
 static void MoveSelectionDisplayMoveEffectiveness(u32 foeEffectiveness, u32 battler);
+static void AppendBattleInfoHint(u8 *str);
+
+#if B_BATTLE_INFO_BUTTON == R_BUTTON
+static const u8 sText_BattleInfoHint[] = _("R: Info");
+#elif B_BATTLE_INFO_BUTTON == L_BUTTON
+static const u8 sText_BattleInfoHint[] = _("L: Info");
+#elif B_BATTLE_INFO_BUTTON == SELECT_BUTTON
+static const u8 sText_BattleInfoHint[] = _("SELECT: Info");
+#elif B_BATTLE_INFO_BUTTON == START_BUTTON
+static const u8 sText_BattleInfoHint[] = _("START: Info");
+#else
+static const u8 sText_BattleInfoHint[] = _("Info");
+#endif
 
 static void (*const sPlayerBufferCommands[CONTROLLER_CMDS_COUNT])(u32 battler) =
 {
@@ -230,6 +245,13 @@ static u32 GetNextBall(u32 ballId)
     return ballId;
 }
 
+static void AppendBattleInfoHint(u8 *str)
+{
+    u8 *ptr = StringAppend(str, COMPOUND_STRING("\n"));
+
+    StringAppend(ptr, sText_BattleInfoHint);
+}
+
 static void HandleInputChooseAction(u32 battler)
 {
     u16 itemId = gBattleResources->bufferA[battler][2] | (gBattleResources->bufferA[battler][3] << 8);
@@ -293,6 +315,7 @@ static void HandleInputChooseAction(u32 battler)
                 PlaySE(SE_SELECT);
                 ArrowsChangeColorLastBallCycle(FALSE);
                 TryHideLastUsedBall();
+                TryToHideBattleInfoHint();
                 BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, B_ACTION_THROW_BALL, 0);
                 BtlController_Complete(battler);
             }
@@ -300,10 +323,22 @@ static void HandleInputChooseAction(u32 battler)
         }
     }
 
+    if (JOY_NEW(B_BATTLE_INFO_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        TryHideLastUsedBall();
+        TryToHideBattleInfoHint();
+        BeginNormalPaletteFade(-1, 0, 0, 0x10, 0);
+        SetMainCallback2(CB2_BattleInfoMenu);
+        gBattlerControllerFuncs[battler] = Controller_WaitForBattleInfo;
+        return;
+    }
+
     if (JOY_NEW(A_BUTTON))
     {
         PlaySE(SE_SELECT);
         TryHideLastUsedBall();
+        TryToHideBattleInfoHint();
 
         switch (gActionSelectionCursor[battler])
         {
@@ -375,6 +410,7 @@ static void HandleInputChooseAction(u32 battler)
                 AddBagItem(itemId, 1);
             }
             PlaySE(SE_SELECT);
+            TryToHideBattleInfoHint();
             BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, B_ACTION_CANCEL_PARTNER, 0);
             BtlController_Complete(battler);
         }
@@ -395,6 +431,7 @@ static void HandleInputChooseAction(u32 battler)
     }
     else if (DEBUG_BATTLE_MENU == TRUE && JOY_NEW(SELECT_BUTTON))
     {
+        TryToHideBattleInfoHint();
         BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, B_ACTION_DEBUG, 0);
         BtlController_Complete(battler);
     }
@@ -403,6 +440,7 @@ static void HandleInputChooseAction(u32 battler)
     {
         PlaySE(SE_SELECT);
         TryHideLastUsedBall();
+        TryToHideBattleInfoHint();
         BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, B_ACTION_THROW_BALL, 0);
         BtlController_Complete(battler);
     }
@@ -1998,9 +2036,11 @@ static void PlayerHandleChooseAction(u32 battler)
         ActionSelectionDestroyCursorAt(i);
 
     TryRestoreLastUsedBall();
+    TryToAddBattleInfoHint();
     ActionSelectionCreateCursorAt(gActionSelectionCursor[battler], 0);
     PREPARE_MON_NICK_BUFFER(gBattleTextBuff1, battler, gBattlerPartyIndexes[battler]);
     BattleStringExpandPlaceholdersToDisplayedString(gText_WhatWillPkmnDo);
+    AppendBattleInfoHint(gDisplayedStringBattle);
 
     if (B_SHOW_PARTNER_TARGET && gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && IsBattlerAlive(B_POSITION_PLAYER_RIGHT))
     {
@@ -2031,6 +2071,7 @@ static void PlayerHandleChooseAction(u32 battler)
         {
             StringAppend(gStringVar1, COMPOUND_STRING(" {V_D_ARROW}{V_D_ARROW}"));
         }
+        AppendBattleInfoHint(gStringVar1);
         BattlePutTextOnWindow(gStringVar1, B_WIN_ACTION_PROMPT);
     }
     else
@@ -2331,6 +2372,14 @@ static void Controller_WaitForDebug(u32 battler)
     if (gMain.callback2 == BattleMainCB2 && !gPaletteFade.active)
     {
         BtlController_Complete(battler);
+    }
+}
+
+static void Controller_WaitForBattleInfo(u32 battler)
+{
+    if (gMain.callback2 == BattleMainCB2 && !gPaletteFade.active)
+    {
+        gBattlerControllerFuncs[battler] = PlayerHandleChooseAction;
     }
 }
 

@@ -7,6 +7,7 @@
 #include "battle_ai_util.h"
 #include "battle_ai_main.h"
 #include "battle_ai_switch_items.h"
+#include "battle_info.h"
 #include "battle_factory.h"
 #include "battle_setup.h"
 #include "event_data.h"
@@ -248,10 +249,15 @@ void RecordKnownMove(u32 battler, u32 move)
             break;
     }
 
-    if (moveIndex < MAX_MON_MOVES && gBattleHistory->usedMoves[battler][moveIndex] == MOVE_NONE)
+    if (moveIndex < MAX_MON_MOVES)
     {
-        gBattleHistory->usedMoves[battler][moveIndex] = move;
-        gAiPartyData->mons[GetBattlerSide(battler)][gBattlerPartyIndexes[battler]].moves[moveIndex] = move;
+        if (gBattleHistory->usedMoves[battler][moveIndex] == MOVE_NONE)
+        {
+            gBattleHistory->usedMoves[battler][moveIndex] = move;
+            gAiPartyData->mons[GetBattlerSide(battler)][gBattlerPartyIndexes[battler]].moves[moveIndex] = move;
+        }
+        if (gAiLogicData == NULL || (!gAiLogicData->aiCalcInProgress && !gAiLogicData->aiPredictionInProgress))
+            BattleInfo_RecordKnownMove(battler, move, moveIndex);
     }
 }
 
@@ -273,8 +279,12 @@ void ClearBattlerAbilityHistory(u32 battlerId)
 
 void RecordItemEffectBattle(u32 battlerId, enum HoldEffect itemEffect)
 {
+    u16 itemId = gBattleMons[battlerId].item;
     gBattleHistory->itemEffects[battlerId] = itemEffect;
     gAiPartyData->mons[GetBattlerSide(battlerId)][gBattlerPartyIndexes[battlerId]].heldEffect = itemEffect;
+    if (itemId == ITEM_NONE && gLastUsedItem != ITEM_NONE && GetItemHoldEffect(gLastUsedItem) == itemEffect)
+        itemId = gLastUsedItem;
+    BattleInfo_RecordItem(battlerId, itemId);
 }
 
 void ClearBattlerItemEffectHistory(u32 battlerId)

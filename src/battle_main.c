@@ -8,6 +8,7 @@
 #include "battle_end_turn.h"
 #include "battle_hold_effects.h"
 #include "battle_interface.h"
+#include "battle_info.h"
 #include "battle_main.h"
 #include "battle_message.h"
 #include "battle_pyramid.h"
@@ -3738,6 +3739,17 @@ static void DoBattleIntro(void)
             gBattleStruct->eventState.beforeFristTurn = 0;
             gBattleStruct->switchInBattlerCounter = 0;
             Ai_InitPartyStruct(); // Save mons party counts, and first 2/4 mons on the battlefield.
+
+            for (battler = 0; battler < gBattlersCount; battler++)
+            {
+                if (GetBattlerSide(battler) != B_SIDE_OPPONENT)
+                    continue;
+                if (gAbsentBattlerFlags & (1u << battler))
+                    continue;
+                if (gBattleMons[battler].species == SPECIES_NONE)
+                    continue;
+                BattleInfo_RecordSwitchIn(battler);
+            }
 
             // mark all battlers as sent out
             for (battler = 0; battler < gBattlersCount; battler++)

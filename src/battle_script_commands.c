@@ -5,6 +5,7 @@
 #include "battle_anim.h"
 #include "battle_ai_main.h"
 #include "battle_ai_util.h"
+#include "battle_info.h"
 #include "battle_scripts.h"
 #include "battle_environment.h"
 #include "battle_z_move.h"
@@ -6435,6 +6436,7 @@ static void Cmd_moveend(void)
                     {
                         gLastMoves[gBattlerAttacker] = gChosenMove;
                         RecordKnownMove(gBattlerAttacker, gChosenMove);
+                        BattleInfo_RecordMoveUsed(gBattlerAttacker, gChosenMove, gCurrMovePos);
                         gLastResultingMoves[gBattlerAttacker] = gCurrentMove;
                         gLastUsedMoveType[gBattlerAttacker] = GetBattleMoveType(gCurrentMove);
                     }
