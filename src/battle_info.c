@@ -107,6 +107,10 @@
 #define BINFO_FIELD_FLOW_TEXT_Y_OFFSET -8
 #define BINFO_FIELD_TURNS_TEXT_SINGULAR " turn)"
 #define BINFO_FIELD_TURNS_TEXT_PLURAL " turns)"
+#define BINFO_FIELD_TURNS_LEFT_SINGULAR " turn left)"
+#define BINFO_FIELD_TURNS_LEFT_PLURAL " turns left)"
+#define BINFO_FIELD_TURNS_PASSED_SINGULAR " turn passed)"
+#define BINFO_FIELD_TURNS_PASSED_PLURAL " turns passed)"
 #define BINFO_FIELD_STAT_STAGE_WIDTH 8
 #define BINFO_FIELD_STAT_ICON_X_OFFSET BINFO_FIELD_STAT_STAGE_WIDTH
 #define BINFO_FIELD_STAT_ICON_WIDTH 16
@@ -118,9 +122,10 @@
 #define BINFO_FIELD_STAT_INDICATOR_GAP_X 2
 #define BINFO_FIELD_STAT_INDICATOR_GAP_Y 1
 #define BINFO_FIELD_EFFECT_LINE_HEIGHT 10
-#define BINFO_FIELD_EFFECT_LINE_LEN 32
+#define BINFO_FIELD_EFFECT_LINE_LEN 48
 #define BINFO_FIELD_EFFECT_MAX_LINES 6
-#define BINFO_FIELD_PAGE_MAX_LINES 10
+#define BINFO_FIELD_PAGE_MAX_LINES 12
+#define BINFO_FIELD_EFFECT_SECTION_GAP 4
 
 #define BINFO_HP_BAR_TILES 8
 #define BINFO_HP_BAR_PIXELS_PER_TILE 8
@@ -170,6 +175,13 @@ enum
     BINFO_GENDER_MALE,
     BINFO_GENDER_FEMALE,
     BINFO_GENDERLESS,
+};
+
+enum
+{
+    BINFO_EFFECT_COLOR_DEFAULT,
+    BINFO_EFFECT_COLOR_HELPFUL,
+    BINFO_EFFECT_COLOR_HAZARD,
 };
 
 struct BattleInfoMenu
@@ -223,6 +235,7 @@ static void BattleInfo_DrawEnemySummary(struct BattleInfoMenu *data);
 static void BattleInfo_DrawEnemyDetails(struct BattleInfoMenu *data);
 static void BattleInfo_DrawFieldInfo(struct BattleInfoMenu *data);
 static void BattleInfo_PrintText(u8 windowId, u8 fontId, const u8 *str, u8 x, u8 y, u8 speed, void (*callback)(struct TextPrinterTemplate *, u16));
+static void BattleInfo_PrintTextColored(u8 windowId, u8 fontId, const u8 *str, u8 x, u8 y, const u8 *colors);
 static void BattleInfo_EnsureEnemyIcons(struct BattleInfoMenu *data);
 static void BattleInfo_EnsureHpBarSprite(struct BattleInfoMenu *data);
 static void BattleInfo_EnsureStatusIconSprite(struct BattleInfoMenu *data);
@@ -272,9 +285,26 @@ static bool8 BattleInfo_IsWeatherActive(void);
 static bool8 BattleInfo_IsTerrainActive(void);
 static u8 BattleInfo_CollectGlobalEffects(u8 lines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN]);
 static u8 BattleInfo_CollectHazardLines(u8 side, u8 lines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN]);
+static u8 BattleInfo_CollectSideConditions(u8 side, u8 lines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN], u8 colors[BINFO_FIELD_PAGE_MAX_LINES]);
 static void BattleInfo_PrintEffectLines(struct BattleInfoMenu *data,
                                         u8 lines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN],
                                         u8 count, s16 x, s16 yStart);
+static void BattleInfo_PrintEffectLinesColored(struct BattleInfoMenu *data,
+                                               u8 lines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN],
+                                               u8 colors[BINFO_FIELD_PAGE_MAX_LINES],
+                                               u8 count, s16 x, s16 yStart);
+static void BattleInfo_AppendTurnCount(u8 *dst, u16 turns, bool8 showLeft);
+static void BattleInfo_AppendFieldConditionTurns(u8 *dst, enum BattleInfoFieldCondition condition, u16 timer, bool8 variableDuration);
+static void BattleInfo_AppendSideConditionTurns(u8 *dst, u8 side, enum BattleInfoSideCondition condition, u16 timer, bool8 variableDuration);
+static u16 BattleInfo_GetCurrentTurn(void);
+static u16 BattleInfo_GetTurnsPassed(u16 startTurn);
+static u16 BattleInfo_GetFieldTurnsPassed(enum BattleInfoFieldCondition condition);
+static u16 BattleInfo_GetSideTurnsPassed(u8 side, enum BattleInfoSideCondition condition);
+static u8 BattleInfo_GetFieldConditionBattler(enum BattleInfoFieldCondition condition);
+static u8 BattleInfo_GetSideConditionBattler(u8 side, enum BattleInfoSideCondition condition);
+static bool8 BattleInfo_IsBattlerItemKnown(u32 battler);
+static bool8 BattleInfo_IsFieldDurationKnown(enum BattleInfoFieldCondition condition, bool8 variableDuration);
+static bool8 BattleInfo_IsSideDurationKnown(u8 side, enum BattleInfoSideCondition condition, bool8 variableDuration);
 static void BattleInfo_BuildWeatherLine(u8 *dst);
 static void BattleInfo_BuildTerrainLine(u8 *dst);
 static const u8 *BattleInfo_GetGenderText(u8 gender);
@@ -368,13 +398,19 @@ static const u8 sText_NotRevealedYet[] = _("Not revealed yet");
 static const u8 sBattleInfoTextColors_Black[] = {TEXT_COLOR_TRANSPARENT, 1, 3};
 static const u8 sBattleInfoTextColors_Male[] = {TEXT_COLOR_TRANSPARENT, 5, 6};
 static const u8 sBattleInfoTextColors_Female[] = {TEXT_COLOR_TRANSPARENT, 7, 8};
+static const u8 sBattleInfoTextColors_Green[] = {TEXT_COLOR_TRANSPARENT, 9, 10};
+static const u8 sBattleInfoTextColors_Red[] = {TEXT_COLOR_TRANSPARENT, 11, 12};
 static const u8 sText_PageInfo[] = _("Page: Info");
 static const u8 sText_PageMoves[] = _("Page: Moves");
 static const u8 sText_KnownMoves[] = _("Known Moves");
 static const u8 sText_A_Details[] = _("A: Details");
 static const u8 sText_FieldActiveHeader[] = _("Active Battlers");
 static const u8 sText_FieldEffectsHeader[] = _("Field Effects");
-static const u8 sText_FieldNoEffects[] = _("No global effects or hazards");
+static const u8 sText_FieldConditionsHeader[] = _("Field Conditions");
+static const u8 sText_SideConditionsHeader[] = _("Side Conditions");
+static const u8 sText_AllySideHeader[] = _("Ally Side");
+static const u8 sText_OpponentSideHeader[] = _("Opponent Side");
+static const u8 sText_FieldNoEffects[] = _("No field or side conditions");
 static const u8 sText_EffectConfused[] = _("Confused");
 static const u8 sText_EffectInfatuated[] = _("Infatuated");
 static const u8 sText_EffectTypePrefix[] = _("Type: ");
@@ -386,19 +422,26 @@ static const u8 sText_VolatilePrefix[] = _("Vol: ");
 static const u8 sText_None[] = _("-");
 static const u8 sText_WeatherPrefix[] = _("Weather: ");
 static const u8 sText_TerrainPrefix[] = _("Terrain: ");
-static const u8 sText_RoomTrickRoom[] = _("Trick Room: ");
-static const u8 sText_RoomGravity[] = _("Gravity: ");
-static const u8 sText_RoomMagicRoom[] = _("Magic Room: ");
-static const u8 sText_RoomWonderRoom[] = _("Wonder Room: ");
-static const u8 sText_RoomMudSport[] = _("Mud Sport: ");
-static const u8 sText_RoomWaterSport[] = _("Water Sport: ");
-static const u8 sText_RoomFairyLock[] = _("Fairy Lock: ");
+static const u8 sText_RoomTrickRoom[] = _("Trick Room:");
+static const u8 sText_RoomGravity[] = _("Gravity:");
+static const u8 sText_RoomMagicRoom[] = _("Magic Room:");
+static const u8 sText_RoomWonderRoom[] = _("Wonder Room:");
+static const u8 sText_RoomMudSport[] = _("Mud Sport:");
+static const u8 sText_RoomWaterSport[] = _("Water Sport:");
+static const u8 sText_RoomFairyLock[] = _("Fairy Lock:");
 static const u8 sText_HazardNone[] = _("None");
 static const u8 sText_HazardStealthRock[] = _("Stealth Rock");
 static const u8 sText_HazardSpikesPrefix[] = _("Spikes: ");
 static const u8 sText_HazardToxicSpikesPrefix[] = _("Toxic Spikes: ");
 static const u8 sText_HazardStickyWeb[] = _("Sticky Web");
 static const u8 sText_HazardSteelSurge[] = _("Steelsurge");
+static const u8 sText_SideReflect[] = _("Reflect");
+static const u8 sText_SideLightScreen[] = _("Light Screen");
+static const u8 sText_SideAuroraVeil[] = _("Aurora Veil");
+static const u8 sText_SideTailwind[] = _("Tailwind");
+static const u8 sText_SideSafeguard[] = _("Safeguard");
+static const u8 sText_SideMist[] = _("Mist");
+static const u8 sText_SideLuckyChant[] = _("Lucky Chant");
 static const u8 sText_MoveSlotUnknown[] = _("---");
 static const u8 sText_P1[] = _("P1");
 static const u8 sText_P2[] = _("P2");
@@ -790,6 +833,11 @@ static void BattleInfo_PrintText(u8 windowId, u8 fontId, const u8 *str, u8 x, u8
 {
     AddTextPrinterParameterized4(windowId, fontId, x, y, 0, 0, sBattleInfoTextColors_Black, speed, str);
     (void)callback;
+}
+
+static void BattleInfo_PrintTextColored(u8 windowId, u8 fontId, const u8 *str, u8 x, u8 y, const u8 *colors)
+{
+    AddTextPrinterParameterized4(windowId, fontId, x, y, 0, 0, colors, 0, str);
 }
 
 static void CB2_BattleInfoMenuMain(void)
@@ -2395,41 +2443,37 @@ static void BattleInfo_DrawFieldBattlerSection(struct BattleInfoMenu *data, u32 
 
 static void BattleInfo_DrawFieldEffects(struct BattleInfoMenu *data)
 {
-    u8 globalLines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN];
-    u8 hazardLinesLeft[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN];
-    u8 hazardLinesRight[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN];
-    u8 globalCount;
-    u8 hazardLeftCount;
-    u8 hazardRightCount;
-    bool8 hasGlobalEffects;
-    bool8 hasHazardsLeft;
-    bool8 hasHazardsRight;
-    bool8 hasAnyHazards;
+    u8 fieldLines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN];
+    u8 sideLinesLeft[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN];
+    u8 sideLinesRight[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN];
+    u8 sideColorsLeft[BINFO_FIELD_PAGE_MAX_LINES];
+    u8 sideColorsRight[BINFO_FIELD_PAGE_MAX_LINES];
+    u8 fieldCount;
+    u8 sideLeftCount;
+    u8 sideRightCount;
+    bool8 hasFieldConditions;
+    bool8 hasSideConditions;
     u16 windowWidth;
     u16 windowHeight;
     s16 contentTop;
-    s16 contentHeight;
-    s16 globalTop;
-    s16 hazardsTop;
+    s16 y;
+    u8 maxFieldLines;
+    u8 maxSideLines;
 
     FillWindowPixelBuffer(data->contentWindowId, PIXEL_FILL(0));
     contentTop = BattleInfo_DrawFieldTitle(data, sText_FieldEffectsHeader);
     windowWidth = GetWindowAttribute(data->contentWindowId, WINDOW_WIDTH) * 8;
     windowHeight = GetWindowAttribute(data->contentWindowId, WINDOW_HEIGHT) * 8;
-    contentHeight = windowHeight - contentTop;
-    globalTop = contentTop;
-    hazardsTop = contentTop;
+    y = contentTop;
 
-    globalCount = BattleInfo_CollectGlobalEffects(globalLines);
-    hazardLeftCount = BattleInfo_CollectHazardLines(B_SIDE_PLAYER, hazardLinesLeft);
-    hazardRightCount = BattleInfo_CollectHazardLines(B_SIDE_OPPONENT, hazardLinesRight);
+    fieldCount = BattleInfo_CollectGlobalEffects(fieldLines);
+    sideLeftCount = BattleInfo_CollectSideConditions(B_SIDE_PLAYER, sideLinesLeft, sideColorsLeft);
+    sideRightCount = BattleInfo_CollectSideConditions(B_SIDE_OPPONENT, sideLinesRight, sideColorsRight);
 
-    hasGlobalEffects = (globalCount > 0);
-    hasHazardsLeft = (hazardLeftCount > 0);
-    hasHazardsRight = (hazardRightCount > 0);
-    hasAnyHazards = (hasHazardsLeft || hasHazardsRight);
+    hasFieldConditions = (fieldCount > 0);
+    hasSideConditions = (sideLeftCount > 0 || sideRightCount > 0);
 
-    if (!hasGlobalEffects && !hasAnyHazards)
+    if (!hasFieldConditions && !hasSideConditions)
     {
         u8 x = GetStringCenterAlignXOffset(FONT_SMALL, sText_FieldNoEffects, windowWidth);
         BattleInfo_PrintText(data->contentWindowId, FONT_SMALL, sText_FieldNoEffects, x, contentTop, 0, NULL);
@@ -2437,42 +2481,78 @@ static void BattleInfo_DrawFieldEffects(struct BattleInfoMenu *data)
         return;
     }
 
-    if (hasGlobalEffects && hasAnyHazards)
+    if (hasFieldConditions)
     {
-        globalTop = contentTop;
-        hazardsTop = contentTop + (contentHeight / 2);
-    }
-    else if (hasGlobalEffects)
-    {
-        globalTop = contentTop;
-    }
-    else
-    {
-        hazardsTop = contentTop;
+        s16 remainingHeight = windowHeight - y;
+        s16 reserveHeight = 0;
+
+        if (hasSideConditions)
+            reserveHeight = (BINFO_FIELD_EFFECT_LINE_HEIGHT * 3);
+
+        if (remainingHeight > reserveHeight + BINFO_FIELD_EFFECT_LINE_HEIGHT)
+            maxFieldLines = (remainingHeight - reserveHeight - BINFO_FIELD_EFFECT_LINE_HEIGHT) / BINFO_FIELD_EFFECT_LINE_HEIGHT;
+        else
+            maxFieldLines = 0;
+
+        if (fieldCount > maxFieldLines)
+            fieldCount = maxFieldLines;
+
+        BattleInfo_PrintText(data->contentWindowId, FONT_SMALL, sText_FieldConditionsHeader, 0, y, 0, NULL);
+        y += BINFO_FIELD_EFFECT_LINE_HEIGHT;
+        if (fieldCount != 0)
+        {
+            BattleInfo_PrintEffectLines(data, fieldLines, fieldCount, 0, y);
+            y += fieldCount * BINFO_FIELD_EFFECT_LINE_HEIGHT;
+        }
     }
 
-    if (hasGlobalEffects)
-        BattleInfo_PrintEffectLines(data, globalLines, globalCount, 0, globalTop);
-
-    if (hasAnyHazards)
+    if (hasSideConditions)
     {
         s16 colWidth = windowWidth / 2;
         s16 leftX = 0;
         s16 rightX = colWidth;
+        s16 remainingHeight = windowHeight - y;
 
-        if (!hasHazardsLeft)
+        if (hasFieldConditions && remainingHeight > BINFO_FIELD_EFFECT_SECTION_GAP)
         {
-            StringCopy(hazardLinesLeft[0], sText_HazardNone);
-            hazardLeftCount = 1;
-        }
-        if (!hasHazardsRight)
-        {
-            StringCopy(hazardLinesRight[0], sText_HazardNone);
-            hazardRightCount = 1;
+            y += BINFO_FIELD_EFFECT_SECTION_GAP;
+            remainingHeight -= BINFO_FIELD_EFFECT_SECTION_GAP;
         }
 
-        BattleInfo_PrintEffectLines(data, hazardLinesLeft, hazardLeftCount, leftX, hazardsTop);
-        BattleInfo_PrintEffectLines(data, hazardLinesRight, hazardRightCount, rightX, hazardsTop);
+        if (sideLeftCount == 0 && sideRightCount > 0)
+        {
+            StringCopy(sideLinesLeft[0], sText_HazardNone);
+            sideColorsLeft[0] = BINFO_EFFECT_COLOR_DEFAULT;
+            sideLeftCount = 1;
+        }
+        if (sideRightCount == 0 && sideLeftCount > 0)
+        {
+            StringCopy(sideLinesRight[0], sText_HazardNone);
+            sideColorsRight[0] = BINFO_EFFECT_COLOR_DEFAULT;
+            sideRightCount = 1;
+        }
+
+        if (remainingHeight >= (BINFO_FIELD_EFFECT_LINE_HEIGHT * 2))
+        {
+            BattleInfo_PrintText(data->contentWindowId, FONT_SMALL, sText_SideConditionsHeader, 0, y, 0, NULL);
+            y += BINFO_FIELD_EFFECT_LINE_HEIGHT;
+            BattleInfo_PrintText(data->contentWindowId, FONT_SMALL, sText_AllySideHeader, leftX, y, 0, NULL);
+            BattleInfo_PrintText(data->contentWindowId, FONT_SMALL, sText_OpponentSideHeader, rightX, y, 0, NULL);
+            y += BINFO_FIELD_EFFECT_LINE_HEIGHT;
+
+            if (remainingHeight > (BINFO_FIELD_EFFECT_LINE_HEIGHT * 2))
+                maxSideLines = (remainingHeight - (BINFO_FIELD_EFFECT_LINE_HEIGHT * 2)) / BINFO_FIELD_EFFECT_LINE_HEIGHT;
+            else
+                maxSideLines = 0;
+
+            if (sideLeftCount > maxSideLines)
+                sideLeftCount = maxSideLines;
+            if (sideRightCount > maxSideLines)
+                sideRightCount = maxSideLines;
+
+            BattleInfo_PrintEffectLinesColored(data, sideLinesLeft, sideColorsLeft, sideLeftCount, leftX, y);
+            BattleInfo_PrintEffectLinesColored(data, sideLinesRight, sideColorsRight, sideRightCount, rightX, y);
+        }
     }
 
     CopyWindowToVram(data->contentWindowId, COPYWIN_FULL);
@@ -2502,43 +2582,43 @@ static u8 BattleInfo_CollectGlobalEffects(u8 lines[BINFO_FIELD_PAGE_MAX_LINES][B
     {
         u8 *dst = lines[count++];
         dst = StringCopy(dst, sText_RoomTrickRoom);
-        ConvertIntToDecimalStringN(dst, gFieldTimers.trickRoomTimer, STR_CONV_MODE_LEFT_ALIGN, 2);
+        BattleInfo_AppendFieldConditionTurns(dst, BINFO_FIELD_COND_TRICK_ROOM, gFieldTimers.trickRoomTimer, FALSE);
     }
     if (gFieldTimers.gravityTimer && count < BINFO_FIELD_PAGE_MAX_LINES)
     {
         u8 *dst = lines[count++];
         dst = StringCopy(dst, sText_RoomGravity);
-        ConvertIntToDecimalStringN(dst, gFieldTimers.gravityTimer, STR_CONV_MODE_LEFT_ALIGN, 2);
+        BattleInfo_AppendFieldConditionTurns(dst, BINFO_FIELD_COND_GRAVITY, gFieldTimers.gravityTimer, FALSE);
     }
     if (gFieldTimers.magicRoomTimer && count < BINFO_FIELD_PAGE_MAX_LINES)
     {
         u8 *dst = lines[count++];
         dst = StringCopy(dst, sText_RoomMagicRoom);
-        ConvertIntToDecimalStringN(dst, gFieldTimers.magicRoomTimer, STR_CONV_MODE_LEFT_ALIGN, 2);
+        BattleInfo_AppendFieldConditionTurns(dst, BINFO_FIELD_COND_MAGIC_ROOM, gFieldTimers.magicRoomTimer, FALSE);
     }
     if (gFieldTimers.wonderRoomTimer && count < BINFO_FIELD_PAGE_MAX_LINES)
     {
         u8 *dst = lines[count++];
         dst = StringCopy(dst, sText_RoomWonderRoom);
-        ConvertIntToDecimalStringN(dst, gFieldTimers.wonderRoomTimer, STR_CONV_MODE_LEFT_ALIGN, 2);
+        BattleInfo_AppendFieldConditionTurns(dst, BINFO_FIELD_COND_WONDER_ROOM, gFieldTimers.wonderRoomTimer, FALSE);
     }
     if (gFieldTimers.mudSportTimer && count < BINFO_FIELD_PAGE_MAX_LINES)
     {
         u8 *dst = lines[count++];
         dst = StringCopy(dst, sText_RoomMudSport);
-        ConvertIntToDecimalStringN(dst, gFieldTimers.mudSportTimer, STR_CONV_MODE_LEFT_ALIGN, 2);
+        BattleInfo_AppendFieldConditionTurns(dst, BINFO_FIELD_COND_MUD_SPORT, gFieldTimers.mudSportTimer, FALSE);
     }
     if (gFieldTimers.waterSportTimer && count < BINFO_FIELD_PAGE_MAX_LINES)
     {
         u8 *dst = lines[count++];
         dst = StringCopy(dst, sText_RoomWaterSport);
-        ConvertIntToDecimalStringN(dst, gFieldTimers.waterSportTimer, STR_CONV_MODE_LEFT_ALIGN, 2);
+        BattleInfo_AppendFieldConditionTurns(dst, BINFO_FIELD_COND_WATER_SPORT, gFieldTimers.waterSportTimer, FALSE);
     }
     if (gFieldTimers.fairyLockTimer && count < BINFO_FIELD_PAGE_MAX_LINES)
     {
         u8 *dst = lines[count++];
         dst = StringCopy(dst, sText_RoomFairyLock);
-        ConvertIntToDecimalStringN(dst, gFieldTimers.fairyLockTimer, STR_CONV_MODE_LEFT_ALIGN, 2);
+        BattleInfo_AppendFieldConditionTurns(dst, BINFO_FIELD_COND_FAIRY_LOCK, gFieldTimers.fairyLockTimer, FALSE);
     }
 
     return count;
@@ -2578,6 +2658,76 @@ static u8 BattleInfo_CollectHazardLines(u8 side, u8 lines[BINFO_FIELD_PAGE_MAX_L
     return count;
 }
 
+static u8 BattleInfo_CollectSideConditions(u8 side, u8 lines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN], u8 colors[BINFO_FIELD_PAGE_MAX_LINES])
+{
+    u8 count = 0;
+
+    if (gSideStatuses[side] & SIDE_STATUS_REFLECT && count < BINFO_FIELD_PAGE_MAX_LINES)
+    {
+        u8 *dst = lines[count];
+        dst = StringCopy(dst, sText_SideReflect);
+        BattleInfo_AppendSideConditionTurns(dst, side, BINFO_SIDE_COND_REFLECT, gSideTimers[side].reflectTimer, TRUE);
+        colors[count++] = BINFO_EFFECT_COLOR_HELPFUL;
+    }
+    if (gSideStatuses[side] & SIDE_STATUS_LIGHTSCREEN && count < BINFO_FIELD_PAGE_MAX_LINES)
+    {
+        u8 *dst = lines[count];
+        dst = StringCopy(dst, sText_SideLightScreen);
+        BattleInfo_AppendSideConditionTurns(dst, side, BINFO_SIDE_COND_LIGHT_SCREEN, gSideTimers[side].lightscreenTimer, TRUE);
+        colors[count++] = BINFO_EFFECT_COLOR_HELPFUL;
+    }
+    if (gSideStatuses[side] & SIDE_STATUS_AURORA_VEIL && count < BINFO_FIELD_PAGE_MAX_LINES)
+    {
+        u8 *dst = lines[count];
+        dst = StringCopy(dst, sText_SideAuroraVeil);
+        BattleInfo_AppendSideConditionTurns(dst, side, BINFO_SIDE_COND_AURORA_VEIL, gSideTimers[side].auroraVeilTimer, TRUE);
+        colors[count++] = BINFO_EFFECT_COLOR_HELPFUL;
+    }
+    if (gSideStatuses[side] & SIDE_STATUS_TAILWIND && count < BINFO_FIELD_PAGE_MAX_LINES)
+    {
+        u8 *dst = lines[count];
+        dst = StringCopy(dst, sText_SideTailwind);
+        BattleInfo_AppendSideConditionTurns(dst, side, BINFO_SIDE_COND_TAILWIND, gSideTimers[side].tailwindTimer, FALSE);
+        colors[count++] = BINFO_EFFECT_COLOR_HELPFUL;
+    }
+    if (gSideStatuses[side] & SIDE_STATUS_SAFEGUARD && count < BINFO_FIELD_PAGE_MAX_LINES)
+    {
+        u8 *dst = lines[count];
+        dst = StringCopy(dst, sText_SideSafeguard);
+        BattleInfo_AppendSideConditionTurns(dst, side, BINFO_SIDE_COND_SAFEGUARD, gSideTimers[side].safeguardTimer, FALSE);
+        colors[count++] = BINFO_EFFECT_COLOR_HELPFUL;
+    }
+    if (gSideStatuses[side] & SIDE_STATUS_MIST && count < BINFO_FIELD_PAGE_MAX_LINES)
+    {
+        u8 *dst = lines[count];
+        dst = StringCopy(dst, sText_SideMist);
+        BattleInfo_AppendSideConditionTurns(dst, side, BINFO_SIDE_COND_MIST, gSideTimers[side].mistTimer, FALSE);
+        colors[count++] = BINFO_EFFECT_COLOR_HELPFUL;
+    }
+    if (gSideStatuses[side] & SIDE_STATUS_LUCKY_CHANT && count < BINFO_FIELD_PAGE_MAX_LINES)
+    {
+        u8 *dst = lines[count];
+        dst = StringCopy(dst, sText_SideLuckyChant);
+        BattleInfo_AppendSideConditionTurns(dst, side, BINFO_SIDE_COND_LUCKY_CHANT, gSideTimers[side].luckyChantTimer, FALSE);
+        colors[count++] = BINFO_EFFECT_COLOR_HELPFUL;
+    }
+
+    if (count < BINFO_FIELD_PAGE_MAX_LINES)
+    {
+        u8 hazardLines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN];
+        u8 hazardCount = BattleInfo_CollectHazardLines(side, hazardLines);
+        u8 i;
+
+        for (i = 0; i < hazardCount && count < BINFO_FIELD_PAGE_MAX_LINES; i++)
+        {
+            StringCopy(lines[count], hazardLines[i]);
+            colors[count++] = BINFO_EFFECT_COLOR_HAZARD;
+        }
+    }
+
+    return count;
+}
+
 static void BattleInfo_PrintEffectLines(struct BattleInfoMenu *data,
                                         u8 lines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN],
                                         u8 count, s16 x, s16 yStart)
@@ -2589,6 +2739,176 @@ static void BattleInfo_PrintEffectLines(struct BattleInfoMenu *data,
         BattleInfo_PrintText(data->contentWindowId, FONT_SMALL, lines[i], x,
                              yStart + (i * BINFO_FIELD_EFFECT_LINE_HEIGHT), 0, NULL);
     }
+}
+
+static void BattleInfo_PrintEffectLinesColored(struct BattleInfoMenu *data,
+                                               u8 lines[BINFO_FIELD_PAGE_MAX_LINES][BINFO_FIELD_EFFECT_LINE_LEN],
+                                               u8 colors[BINFO_FIELD_PAGE_MAX_LINES],
+                                               u8 count, s16 x, s16 yStart)
+{
+    u8 i;
+    const u8 *textColors;
+
+    for (i = 0; i < count; i++)
+    {
+        switch (colors[i])
+        {
+        case BINFO_EFFECT_COLOR_HELPFUL:
+            textColors = sBattleInfoTextColors_Green;
+            break;
+        case BINFO_EFFECT_COLOR_HAZARD:
+            textColors = sBattleInfoTextColors_Red;
+            break;
+        default:
+            textColors = sBattleInfoTextColors_Black;
+            break;
+        }
+
+        BattleInfo_PrintTextColored(data->contentWindowId, FONT_SMALL, lines[i], x,
+                                    yStart + (i * BINFO_FIELD_EFFECT_LINE_HEIGHT), textColors);
+    }
+}
+
+static void BattleInfo_AppendTurnCount(u8 *dst, u16 turns, bool8 showLeft)
+{
+    StringAppend(dst, COMPOUND_STRING(" ("));
+    ConvertIntToDecimalStringN(dst + StringLength(dst), turns, STR_CONV_MODE_LEFT_ALIGN, 2);
+    if (turns == 1)
+    {
+        if (showLeft)
+            StringAppend(dst, COMPOUND_STRING(BINFO_FIELD_TURNS_LEFT_SINGULAR));
+        else
+            StringAppend(dst, COMPOUND_STRING(BINFO_FIELD_TURNS_PASSED_SINGULAR));
+    }
+    else
+    {
+        if (showLeft)
+            StringAppend(dst, COMPOUND_STRING(BINFO_FIELD_TURNS_LEFT_PLURAL));
+        else
+            StringAppend(dst, COMPOUND_STRING(BINFO_FIELD_TURNS_PASSED_PLURAL));
+    }
+}
+
+static void BattleInfo_AppendFieldConditionTurns(u8 *dst, enum BattleInfoFieldCondition condition, u16 timer, bool8 variableDuration)
+{
+    if (timer == 0)
+        return;
+
+    if (BattleInfo_IsFieldDurationKnown(condition, variableDuration))
+        BattleInfo_AppendTurnCount(dst, timer, TRUE);
+    else
+        BattleInfo_AppendTurnCount(dst, BattleInfo_GetFieldTurnsPassed(condition), FALSE);
+}
+
+static void BattleInfo_AppendSideConditionTurns(u8 *dst, u8 side, enum BattleInfoSideCondition condition, u16 timer, bool8 variableDuration)
+{
+    if (timer == 0)
+        return;
+
+    if (BattleInfo_IsSideDurationKnown(side, condition, variableDuration))
+        BattleInfo_AppendTurnCount(dst, timer, TRUE);
+    else
+        BattleInfo_AppendTurnCount(dst, BattleInfo_GetSideTurnsPassed(side, condition), FALSE);
+}
+
+static u16 BattleInfo_GetCurrentTurn(void)
+{
+    return gBattleTurnCounter + 1;
+}
+
+static u16 BattleInfo_GetTurnsPassed(u16 startTurn)
+{
+    u16 currentTurn = BattleInfo_GetCurrentTurn();
+
+    if (startTurn == 0 || currentTurn < startTurn)
+        return 0;
+
+    return currentTurn - startTurn;
+}
+
+static u16 BattleInfo_GetFieldTurnsPassed(enum BattleInfoFieldCondition condition)
+{
+    if (gBattleStruct == NULL)
+        return 0;
+
+    return BattleInfo_GetTurnsPassed(gBattleStruct->battleInfo.fieldConditionStartTurns[condition]);
+}
+
+static u16 BattleInfo_GetSideTurnsPassed(u8 side, enum BattleInfoSideCondition condition)
+{
+    if (gBattleStruct == NULL || side >= NUM_BATTLE_SIDES)
+        return 0;
+
+    return BattleInfo_GetTurnsPassed(gBattleStruct->battleInfo.sideConditionStartTurns[side][condition]);
+}
+
+static u8 BattleInfo_GetFieldConditionBattler(enum BattleInfoFieldCondition condition)
+{
+    u8 battler;
+
+    if (gBattleStruct == NULL)
+        return MAX_BATTLERS_COUNT;
+
+    battler = gBattleStruct->battleInfo.fieldConditionBattlers[condition];
+    if (battler == 0)
+        return MAX_BATTLERS_COUNT;
+
+    return battler - 1;
+}
+
+static u8 BattleInfo_GetSideConditionBattler(u8 side, enum BattleInfoSideCondition condition)
+{
+    u8 battler;
+
+    if (gBattleStruct == NULL || side >= NUM_BATTLE_SIDES)
+        return MAX_BATTLERS_COUNT;
+
+    battler = gBattleStruct->battleInfo.sideConditionBattlers[side][condition];
+    if (battler == 0)
+        return MAX_BATTLERS_COUNT;
+
+    return battler - 1;
+}
+
+static bool8 BattleInfo_IsBattlerItemKnown(u32 battler)
+{
+    u8 slot;
+
+    if (gBattleStruct == NULL || battler >= MAX_BATTLERS_COUNT)
+        return FALSE;
+    if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+        return TRUE;
+
+    slot = gBattlerPartyIndexes[battler];
+    return gBattleStruct->battleInfo.mon[B_SIDE_OPPONENT][slot].itemId != ITEM_NONE;
+}
+
+static bool8 BattleInfo_IsFieldDurationKnown(enum BattleInfoFieldCondition condition, bool8 variableDuration)
+{
+    u8 battler;
+
+    if (!variableDuration)
+        return TRUE;
+
+    battler = BattleInfo_GetFieldConditionBattler(condition);
+    if (battler >= MAX_BATTLERS_COUNT)
+        return FALSE;
+
+    return BattleInfo_IsBattlerItemKnown(battler);
+}
+
+static bool8 BattleInfo_IsSideDurationKnown(u8 side, enum BattleInfoSideCondition condition, bool8 variableDuration)
+{
+    u8 battler;
+
+    if (side == B_SIDE_PLAYER || !variableDuration)
+        return TRUE;
+
+    battler = BattleInfo_GetSideConditionBattler(side, condition);
+    if (battler >= MAX_BATTLERS_COUNT)
+        return FALSE;
+
+    return BattleInfo_IsBattlerItemKnown(battler);
 }
 
 static void BattleInfo_OpenAbilityPopup(struct BattleInfoMenu *data, enum Ability ability)
@@ -3238,9 +3558,10 @@ static void BattleInfo_BuildWeatherLine(u8 *dst)
     StringAppend(dst, weatherText);
     if ((gBattleWeather & B_WEATHER_ANY) && timer != 0)
     {
-        StringAppend(dst, COMPOUND_STRING(" ("));
-        ConvertIntToDecimalStringN(dst + StringLength(dst), timer, STR_CONV_MODE_LEFT_ALIGN, 2);
-        StringAppend(dst, COMPOUND_STRING(")"));
+        bool8 showLeft = BattleInfo_IsFieldDurationKnown(BINFO_FIELD_COND_WEATHER, TRUE);
+        u16 turns = showLeft ? timer : BattleInfo_GetFieldTurnsPassed(BINFO_FIELD_COND_WEATHER);
+
+        BattleInfo_AppendTurnCount(dst, turns, showLeft);
     }
 }
 
@@ -3262,9 +3583,10 @@ static void BattleInfo_BuildTerrainLine(u8 *dst)
     StringAppend(dst, terrainText);
     if ((gFieldStatuses & STATUS_FIELD_TERRAIN_ANY) && timer != 0)
     {
-        StringAppend(dst, COMPOUND_STRING(" ("));
-        ConvertIntToDecimalStringN(dst + StringLength(dst), timer, STR_CONV_MODE_LEFT_ALIGN, 2);
-        StringAppend(dst, COMPOUND_STRING(")"));
+        bool8 showLeft = BattleInfo_IsFieldDurationKnown(BINFO_FIELD_COND_TERRAIN, TRUE);
+        u16 turns = showLeft ? timer : BattleInfo_GetFieldTurnsPassed(BINFO_FIELD_COND_TERRAIN);
+
+        BattleInfo_AppendTurnCount(dst, turns, showLeft);
     }
 }
 
@@ -3377,4 +3699,28 @@ void BattleInfo_RecordItem(u32 battler, u16 itemId)
 
     info = &gBattleStruct->battleInfo.mon[GetBattlerSide(battler)][gBattlerPartyIndexes[battler]];
     info->itemId = itemId;
+}
+
+void BattleInfo_RecordFieldCondition(enum BattleInfoFieldCondition condition, u32 battler)
+{
+    if (gBattleStruct == NULL || condition >= BINFO_FIELD_COND_COUNT)
+        return;
+
+    gBattleStruct->battleInfo.fieldConditionStartTurns[condition] = BattleInfo_GetCurrentTurn();
+    if (battler < MAX_BATTLERS_COUNT)
+        gBattleStruct->battleInfo.fieldConditionBattlers[condition] = battler + 1;
+    else
+        gBattleStruct->battleInfo.fieldConditionBattlers[condition] = 0;
+}
+
+void BattleInfo_RecordSideCondition(u32 side, enum BattleInfoSideCondition condition, u32 battler)
+{
+    if (gBattleStruct == NULL || side >= NUM_BATTLE_SIDES || condition >= BINFO_SIDE_COND_COUNT)
+        return;
+
+    gBattleStruct->battleInfo.sideConditionStartTurns[side][condition] = BattleInfo_GetCurrentTurn();
+    if (battler < MAX_BATTLERS_COUNT)
+        gBattleStruct->battleInfo.sideConditionBattlers[side][condition] = battler + 1;
+    else
+        gBattleStruct->battleInfo.sideConditionBattlers[side][condition] = 0;
 }

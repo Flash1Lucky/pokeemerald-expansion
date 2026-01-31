@@ -2902,6 +2902,7 @@ static inline bool32 TrySetReflect(u32 battler)
             gSideTimers[side].reflectTimer = 8;
         else
             gSideTimers[side].reflectTimer = 5;
+        BattleInfo_RecordSideCondition(side, BINFO_SIDE_COND_REFLECT, battler);
 
         if (IsDoubleBattle() && CountAliveMonsInBattle(BATTLE_ALIVE_SIDE, battler) == 2)
             gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SET_REFLECT_DOUBLE;
@@ -2923,6 +2924,7 @@ static inline bool32 TrySetLightScreen(u32 battler)
             gSideTimers[side].lightscreenTimer = 8;
         else
             gSideTimers[side].lightscreenTimer = 5;
+        BattleInfo_RecordSideCondition(side, BINFO_SIDE_COND_LIGHT_SCREEN, battler);
 
         if (IsDoubleBattle() && CountAliveMonsInBattle(BATTLE_ALIVE_SIDE, battler) == 2)
             gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SET_LIGHTSCREEN_DOUBLE;
@@ -3901,6 +3903,7 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
                 gFieldTimers.terrainTimer = 8;
             else
                 gFieldTimers.terrainTimer = 5;
+            BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_TERRAIN, gBattlerAttacker);
             BattleScriptPush(battleScript);
             gBattlescriptCurrInstr = BattleScript_EffectSetTerrain;
         }
@@ -3945,11 +3948,14 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
     case MOVE_EFFECT_AURORA_VEIL:
         if (!(gSideStatuses[GetBattlerSide(gBattlerAttacker)] & SIDE_STATUS_AURORA_VEIL))
         {
-            gSideStatuses[GetBattlerSide(gBattlerAttacker)] |= SIDE_STATUS_AURORA_VEIL;
+            u32 side = GetBattlerSide(gBattlerAttacker);
+
+            gSideStatuses[side] |= SIDE_STATUS_AURORA_VEIL;
             if (GetBattlerHoldEffect(gBattlerAttacker) == HOLD_EFFECT_LIGHT_CLAY)
-                gSideTimers[GetBattlerSide(gBattlerAttacker)].auroraVeilTimer = 8;
+                gSideTimers[side].auroraVeilTimer = 8;
             else
-                gSideTimers[GetBattlerSide(gBattlerAttacker)].auroraVeilTimer = 5;
+                gSideTimers[side].auroraVeilTimer = 5;
+            BattleInfo_RecordSideCondition(side, BINFO_SIDE_COND_AURORA_VEIL, gBattlerAttacker);
             gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SET_SAFEGUARD;
             BattleScriptPush(battleScript);
             gBattlescriptCurrInstr = BattleScript_MoveEffectAuroraVeil;
@@ -3960,6 +3966,7 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
         {
             gFieldStatuses |= STATUS_FIELD_GRAVITY;
             gFieldTimers.gravityTimer = 5;
+            BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_GRAVITY, gBattlerAttacker);
             BattleScriptPush(battleScript);
             gBattlescriptCurrInstr = BattleScript_EffectGravitySuccess;
         }
@@ -8771,6 +8778,7 @@ static void Cmd_setgravity(void)
     {
         gFieldStatuses |= STATUS_FIELD_GRAVITY;
         gFieldTimers.gravityTimer = 5;
+        BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_GRAVITY, gBattlerAttacker);
         gBattlescriptCurrInstr = cmd->nextInstr;
     }
 }
@@ -11166,8 +11174,11 @@ static void Cmd_setmist(void)
     }
     else
     {
-        gSideTimers[GetBattlerSide(gBattlerAttacker)].mistTimer = 5;
-        gSideStatuses[GetBattlerSide(gBattlerAttacker)] |= SIDE_STATUS_MIST;
+        u32 side = GetBattlerSide(gBattlerAttacker);
+
+        gSideTimers[side].mistTimer = 5;
+        gSideStatuses[side] |= SIDE_STATUS_MIST;
+        BattleInfo_RecordSideCondition(side, BINFO_SIDE_COND_MIST, gBattlerAttacker);
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SET_MIST;
     }
     gBattlescriptCurrInstr = cmd->nextInstr;
@@ -11695,6 +11706,7 @@ static void Cmd_settailwind(void)
     {
         gSideStatuses[side] |= SIDE_STATUS_TAILWIND;
         gSideTimers[side].tailwindTimer = (GetConfig(CONFIG_TAILWIND_TURNS) >= GEN_5 ? 4 : 3);
+        BattleInfo_RecordSideCondition(side, BINFO_SIDE_COND_TAILWIND, gBattlerAttacker);
         gBattlescriptCurrInstr = cmd->nextInstr;
     }
     else
@@ -12083,8 +12095,11 @@ static void Cmd_setsafeguard(void)
     }
     else
     {
-        gSideStatuses[GetBattlerSide(gBattlerAttacker)] |= SIDE_STATUS_SAFEGUARD;
-        gSideTimers[GetBattlerSide(gBattlerAttacker)].safeguardTimer = 5;
+        u32 side = GetBattlerSide(gBattlerAttacker);
+
+        gSideStatuses[side] |= SIDE_STATUS_SAFEGUARD;
+        gSideTimers[side].safeguardTimer = 5;
+        BattleInfo_RecordSideCondition(side, BINFO_SIDE_COND_SAFEGUARD, gBattlerAttacker);
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SET_SAFEGUARD;
     }
 
@@ -12920,7 +12935,7 @@ static void Cmd_setdamagetohealthdifference(void)
     }
 }
 
-static void HandleRoomMove(u32 statusFlag, u16 *timer, u8 stringId)
+static void HandleRoomMove(u32 statusFlag, u16 *timer, u8 stringId, enum BattleInfoFieldCondition condition)
 {
     if (gFieldStatuses & statusFlag)
     {
@@ -12932,6 +12947,7 @@ static void HandleRoomMove(u32 statusFlag, u16 *timer, u8 stringId)
         gFieldStatuses |= statusFlag;
         *timer = 5;
         gBattleCommunication[MULTISTRING_CHOOSER] = stringId;
+        BattleInfo_RecordFieldCondition(condition, gBattlerAttacker);
     }
 }
 
@@ -12942,13 +12958,13 @@ static void Cmd_setroom(void)
     switch (GetMoveEffect(gCurrentMove))
     {
     case EFFECT_TRICK_ROOM:
-        HandleRoomMove(STATUS_FIELD_TRICK_ROOM, &gFieldTimers.trickRoomTimer, 0);
+        HandleRoomMove(STATUS_FIELD_TRICK_ROOM, &gFieldTimers.trickRoomTimer, 0, BINFO_FIELD_COND_TRICK_ROOM);
         break;
     case EFFECT_WONDER_ROOM:
-        HandleRoomMove(STATUS_FIELD_WONDER_ROOM, &gFieldTimers.wonderRoomTimer, 2);
+        HandleRoomMove(STATUS_FIELD_WONDER_ROOM, &gFieldTimers.wonderRoomTimer, 2, BINFO_FIELD_COND_WONDER_ROOM);
         break;
     case EFFECT_MAGIC_ROOM:
-        HandleRoomMove(STATUS_FIELD_MAGIC_ROOM, &gFieldTimers.magicRoomTimer, 4);
+        HandleRoomMove(STATUS_FIELD_MAGIC_ROOM, &gFieldTimers.magicRoomTimer, 4, BINFO_FIELD_COND_MAGIC_ROOM);
         break;
     default:
         gBattleCommunication[MULTISTRING_CHOOSER] = 6;
@@ -13288,6 +13304,7 @@ static void Cmd_settypebasedhalvers(void)
                 {
                     gFieldStatuses |= STATUS_FIELD_MUDSPORT;
                     gFieldTimers.mudSportTimer = 5;
+                    BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_MUD_SPORT, gBattlerAttacker);
                     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_WEAKEN_ELECTRIC;
                     worked = TRUE;
                 }
@@ -13310,6 +13327,7 @@ static void Cmd_settypebasedhalvers(void)
                 {
                     gFieldStatuses |= STATUS_FIELD_WATERSPORT;
                     gFieldTimers.waterSportTimer = 5;
+                    BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_WATER_SPORT, gBattlerAttacker);
                     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_WEAKEN_FIRE;
                     worked = TRUE;
                 }
@@ -16602,6 +16620,7 @@ void BS_TrySetFairyLock(void)
     {
         gFieldStatuses |= STATUS_FIELD_FAIRY_LOCK;
         gFieldTimers.fairyLockTimer = 2;
+        BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_FAIRY_LOCK, gBattlerAttacker);
         gBattlescriptCurrInstr = cmd->nextInstr;
     }
 }
@@ -17174,6 +17193,7 @@ void BS_SetLuckyChant(void)
     {
         gSideStatuses[side] |= SIDE_STATUS_LUCKY_CHANT;
         gSideTimers[side].luckyChantTimer = 5;
+        BattleInfo_RecordSideCondition(side, BINFO_SIDE_COND_LUCKY_CHANT, gBattlerAttacker);
         gBattlescriptCurrInstr = cmd->nextInstr;
     }
     else
@@ -17549,6 +17569,7 @@ void BS_SetAuroraVeil(void)
             gSideTimers[GetBattlerSide(gBattlerAttacker)].auroraVeilTimer = 8;
         else
             gSideTimers[GetBattlerSide(gBattlerAttacker)].auroraVeilTimer = 5;
+        BattleInfo_RecordSideCondition(side, BINFO_SIDE_COND_AURORA_VEIL, gBattlerAttacker);
 
         if (IsDoubleBattle() && CountAliveMonsInBattle(BATTLE_ALIVE_SIDE, gBattlerAttacker) == 2)
             gBattleCommunication[MULTISTRING_CHOOSER] = 5;

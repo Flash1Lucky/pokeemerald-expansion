@@ -7,6 +7,7 @@
 #include "battle_util.h"
 #include "battle_controllers.h"
 #include "battle_interface.h"
+#include "battle_info.h"
 #include "battle_setup.h"
 #include "battle_z_move.h"
 #include "battle_gimmick.h"
@@ -3240,6 +3241,7 @@ bool32 TryChangeBattleWeather(u32 battler, u32 battleWeatherId, u32 ability)
             gDisableStructs[i].weatherAbilityDone = FALSE;
             ResetParadoxWeatherStat(i);
         }
+        BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_WEATHER, battler);
         return TRUE;
     }
     else
@@ -3257,6 +3259,7 @@ bool32 TryChangeBattleWeather(u32 battler, u32 battleWeatherId, u32 ability)
             gDisableStructs[i].weatherAbilityDone = FALSE;
             ResetParadoxWeatherStat(i);
         }
+        BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_WEATHER, battler);
         return TRUE;
     }
 
@@ -3282,6 +3285,7 @@ bool32 TryChangeBattleTerrain(u32 battler, u32 statusFlag)
         else
             gFieldTimers.terrainTimer = 5;
         gBattleScripting.battler = battler;
+        BattleInfo_RecordFieldCondition(BINFO_FIELD_COND_TERRAIN, battler);
         return TRUE;
     }
 

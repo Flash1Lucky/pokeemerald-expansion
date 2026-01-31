@@ -570,12 +570,39 @@ struct BattleInfoMon
     u16 itemId;
     u16 knownMoves[MAX_MON_MOVES];
     u8 hpFraction;
+    u8 sleepTurns;
     u8 gender:2;
     u8 shiny:1;
     u8 seen:1;
     u8 fainted:1;
     u8 padding:3;
     u8 ppUsed[MAX_MON_MOVES];
+};
+
+enum BattleInfoFieldCondition
+{
+    BINFO_FIELD_COND_WEATHER,
+    BINFO_FIELD_COND_TERRAIN,
+    BINFO_FIELD_COND_TRICK_ROOM,
+    BINFO_FIELD_COND_GRAVITY,
+    BINFO_FIELD_COND_MAGIC_ROOM,
+    BINFO_FIELD_COND_WONDER_ROOM,
+    BINFO_FIELD_COND_MUD_SPORT,
+    BINFO_FIELD_COND_WATER_SPORT,
+    BINFO_FIELD_COND_FAIRY_LOCK,
+    BINFO_FIELD_COND_COUNT,
+};
+
+enum BattleInfoSideCondition
+{
+    BINFO_SIDE_COND_REFLECT,
+    BINFO_SIDE_COND_LIGHT_SCREEN,
+    BINFO_SIDE_COND_AURORA_VEIL,
+    BINFO_SIDE_COND_TAILWIND,
+    BINFO_SIDE_COND_SAFEGUARD,
+    BINFO_SIDE_COND_MIST,
+    BINFO_SIDE_COND_LUCKY_CHANT,
+    BINFO_SIDE_COND_COUNT,
 };
 
 struct BattleInfoState
@@ -586,6 +613,10 @@ struct BattleInfoState
     u8 fieldPage;
     u8 seenOrder[NUM_BATTLE_SIDES][PARTY_SIZE];
     u8 seenOrderCount[NUM_BATTLE_SIDES];
+    u16 fieldConditionStartTurns[BINFO_FIELD_COND_COUNT];
+    u8 fieldConditionBattlers[BINFO_FIELD_COND_COUNT]; // battler id + 1, 0 when unknown
+    u16 sideConditionStartTurns[NUM_BATTLE_SIDES][BINFO_SIDE_COND_COUNT];
+    u8 sideConditionBattlers[NUM_BATTLE_SIDES][BINFO_SIDE_COND_COUNT]; // battler id + 1, 0 when unknown
 };
 
 struct BattleVideo {
