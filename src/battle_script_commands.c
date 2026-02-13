@@ -358,6 +358,7 @@ static bool32 TrySymbiosis(u32 battler, u32 itemId, bool32 moveEnd);
 static bool32 CanAbilityShieldActivateForBattler(u32 battler);
 static void TryClearChargeVolatile(u32 moveType);
 static bool32 IsAnyTargetAffected(void);
+static void TryApplyCatchModeDamageClamp(u8 attacker, u8 target, s16 *damage);
 
 static void Cmd_attackcanceler(void);
 static void Cmd_accuracycheck(void);
@@ -1890,6 +1891,33 @@ static void Cmd_typecalc(void)
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
+static void TryApplyCatchModeDamageClamp(u8 attacker, u8 target, s16 *damage)
+{
+    s32 clampedDamage;
+
+    if (!IsCatchModeAvailableInBattle())
+        return;
+    if (!gBattleStruct->catchModeEnabled)
+        return;
+    if (!IsOnPlayerSide(attacker))
+        return;
+    if (target != GetCatchingBattler())
+        return;
+    if (*damage <= 0)
+        return;
+
+    clampedDamage = *damage;
+    if (gBattleMons[target].hp <= 1)
+    {
+        clampedDamage = 0;
+    }
+    else if (clampedDamage >= gBattleMons[target].hp)
+    {
+        clampedDamage = gBattleMons[target].hp - 1;
+    }
+    *damage = clampedDamage;
+}
+
 static void Cmd_adjustdamage(void)
 {
     CMD_ARGS();
@@ -1936,6 +1964,8 @@ static void Cmd_adjustdamage(void)
             // Form change will be done after attack animation in Cmd_resultmessage.
             continue;
         }
+
+        TryApplyCatchModeDamageClamp(gBattlerAttacker, battlerDef, &gBattleStruct->moveDamage[battlerDef]);
 
         if (gBattleMons[battlerDef].hp > gBattleStruct->moveDamage[battlerDef])
             continue;

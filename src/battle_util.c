@@ -16,6 +16,7 @@
 #include "pokemon.h"
 #include "international_string_util.h"
 #include "item.h"
+#include "item_use.h"
 #include "util.h"
 #include "battle_scripts.h"
 #include "random.h"
@@ -246,6 +247,19 @@ u32 GetCurrentBattleWeather(void)
     }
 
     return currBattleWeather;
+}
+
+bool32 IsCatchModeAvailableInBattle(void)
+{
+    if (gBattleTypeFlags & (BATTLE_TYPE_TRAINER | BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
+        return FALSE;
+    if (!CanThrowBall())
+        return FALSE;
+#if CATCH_MODE_USE_FLAG == 1
+    if (!FlagGet(CATCH_MODE_FLAG))
+        return FALSE;
+#endif
+    return TRUE;
 }
 
 bool32 EndOrContinueWeather(void)
